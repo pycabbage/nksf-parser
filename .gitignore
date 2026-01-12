@@ -1,0 +1,3 @@
+/target
+/lib/tests/fixture/*.nksf
+!/lib/tests/fixture/.gitkeep
