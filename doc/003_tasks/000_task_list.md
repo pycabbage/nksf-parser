@@ -46,19 +46,19 @@ Status: Completed
 
 parse_nksf()およびparse_nksf_from_bytes()を実装する (parser.rs)。
 
-Status: Planned
+Status: Completed
 
 ### 008: lib.rsの実装とモジュール構成
 
 ライブラリエントリーポイントとモジュール構成を整える。
 
-Status: Planned
+Status: Completed
 
 ### 009: Abandoned.nksfの統合テスト作成
 
 最初の統合テストとしてAbandoned.nksfの解析テストを作成する。
 
-Status: Planned
+Status: Completed
 
 ## Phase 4: CLIツールの実装
 
@@ -72,7 +72,7 @@ Status: Planned
 
 cliクレートに必要な依存関係を追加する。
 
-Status: Planned
+Status: In Progress
 
 ## Phase 5: エラーハンドリングと改善
 

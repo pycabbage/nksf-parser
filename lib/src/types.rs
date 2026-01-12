@@ -41,12 +41,8 @@ pub struct NisiMetadata {
 }
 
 /// 内部データ（詳細構造は調査中）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NiInternal {
-    /// BRIB（詳細不明）
-    #[serde(rename = "BRIB")]
-    pub brib: serde_json::Value,
-}
+/// 現時点では全データを保持するためにserde_json::Valueを使用
+pub type NiInternal = serde_json::Value;
 
 /// NICAチャンクのパラメータデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,9 +106,7 @@ mod tests {
     #[test]
     fn test_nisi_metadata_serialize() {
         let metadata = NisiMetadata {
-            ni_internal: NiInternal {
-                brib: serde_json::Value::Null,
-            },
+            ni_internal: serde_json::Value::Null,
             author: "Test Author".to_string(),
             bankchain: vec!["Bank1".to_string()],
             characters: vec!["Char1".to_string()],

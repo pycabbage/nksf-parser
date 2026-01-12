@@ -6,11 +6,11 @@
 
 ## 完了条件
 
-- [ ] `lib/tests/massive_x_factory_library_tests/abandoned_test.rs` が更新されている
-- [ ] Abandoned.nksfファイルが正常に解析できることを確認するテストがある
-- [ ] メタデータの主要フィールドを検証するテストがある
-- [ ] パラメータ配列が期待通りであることを確認するテストがある
-- [ ] `cargo test -p nksf-parser test_abandoned` が成功すること
+- [x] `lib/tests/massive_x_factory_library_tests/abandoned_test.rs` が更新されている
+- [x] Abandoned.nksfファイルが正常に解析できることを確認するテストがある
+- [x] メタデータの主要フィールドを検証するテストがある
+- [x] パラメータ配列が期待通りであることを確認するテストがある
+- [x] `cargo test -p nksf-parser test_abandoned` が成功すること
 
 ## 実装ガイド
 

@@ -1,27 +1,3 @@
-# 007: メインパーサーAPIの実装
-
-## 概要
-
-`lib/src/parser.rs` を作成し、統合パーサーAPIを実装する。
-
-## 完了条件
-
-- [x] `lib/src/parser.rs` が作成されている
-- [x] `parse_nksf(path: &Path)` 関数が実装されている
-- [x] `parse_nksf_from_bytes(data: &[u8])` 関数が実装されている
-- [x] RIFFリーダー、NISIパーサー、NICAパーサーが統合されている
-- [x] 全チャンクが処理され、未知のチャンクも保持される
-- [x] 全バイトが解析されたことを検証する
-- [x] ドキュメントコメントが記述されている（日本語）
-- [x] ユニットテストが記述されている
-- [x] `cargo test -p nksf-parser` が成功すること
-- [x] `cargo clippy` で警告が出ないこと
-
-## 実装ガイド
-
-### 関数定義
-
-```rust
 use crate::error::{ParseError, Result};
 use crate::riff_reader::RiffReader;
 use crate::nisi_parser::parse_nisi_chunk;
@@ -29,7 +5,7 @@ use crate::nica_parser::parse_nica_chunk;
 use crate::types::{NksfFile, NisiMetadata, NicaData, UnknownChunk};
 use std::path::Path;
 use std::fs::File;
-use std::io::{BufReader, Cursor};
+use std::io::{BufReader, Cursor, Read, Seek};
 
 /// .nksfファイルをパスから解析
 ///
@@ -38,6 +14,24 @@ use std::io::{BufReader, Cursor};
 ///
 /// # Returns
 /// * `Result<NksfFile>` - 解析されたファイルデータ
+///
+/// # Errors
+/// * `IoError` - ファイルが存在しない、または読み取れない
+/// * `InvalidRiff` - 不正なRIFFフォーマット
+/// * `InvalidNiks` - 不正なNIKSフォーマット、または必須チャンクが欠けている
+/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `IncompleteParse` - 未解析のバイトが残っている
+///
+/// # Examples
+///
+/// ```no_run
+/// use nksf_parser::parse_nksf;
+/// use std::path::Path;
+///
+/// let path = Path::new("preset.nksf");
+/// let nksf = parse_nksf(&path)?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn parse_nksf(path: &Path) -> Result<NksfFile> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -51,11 +45,28 @@ pub fn parse_nksf(path: &Path) -> Result<NksfFile> {
 ///
 /// # Returns
 /// * `Result<NksfFile>` - 解析されたファイルデータ
+///
+/// # Errors
+/// * `InvalidRiff` - 不正なRIFFフォーマット
+/// * `InvalidNiks` - 不正なNIKSフォーマット、または必須チャンクが欠けている
+/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `IncompleteParse` - 未解析のバイトが残っている
+///
+/// # Examples
+///
+/// ```no_run
+/// use nksf_parser::parse_nksf_from_bytes;
+///
+/// let data = std::fs::read("preset.nksf")?;
+/// let nksf = parse_nksf_from_bytes(&data)?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub fn parse_nksf_from_bytes(data: &[u8]) -> Result<NksfFile> {
     let cursor = Cursor::new(data);
     parse_nksf_from_reader(cursor)
 }
 
+/// 内部ヘルパー関数: Readerから.nksfファイルを解析
 fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
     let mut riff_reader = RiffReader::new(reader)?;
 
@@ -77,7 +88,7 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
                 parameters = Some(parse_nica_chunk(&data)?);
             }
             _ => {
-                // 未知のチャンクを保存
+                // 未知のチャンクを保存（完全なバイト解析のため）
                 unknown_chunks.push(UnknownChunk {
                     id: chunk_id.to_string(),
                     version: None, // 必要に応じてバージョンを抽出
@@ -100,18 +111,24 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
         unknown_chunks,
     })
 }
-```
 
-## 注意点
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-- 全チャンクを処理し、未知のチャンクも `unknown_chunks` に保存する
-- NISIとNICAチャンクは必須
-- `verify_complete()` で全バイトが処理されたことを確認
-- エラーハンドリングを適切に行う
-- ユニットテストはファイル内に記述する（`#[cfg(test)]` モジュール）
+    #[test]
+    fn test_parse_nksf_from_bytes_invalid_riff() {
+        let data = b"INVALID DATA";
+        let result = parse_nksf_from_bytes(data);
+        assert!(matches!(result, Err(ParseError::InvalidRiff)));
+    }
 
----
-
-## 実装メモ
-
-[実装時に発見した事柄や改善点などを記載]
+    #[test]
+    fn test_parse_nksf_from_bytes_missing_chunks() {
+        // RIFFヘッダーのみ、チャンクなし
+        let data = b"RIFF\x04\x00\x00\x00NIKS";
+        let result = parse_nksf_from_bytes(data);
+        // 必須チャンクが欠けている
+        assert!(matches!(result, Err(ParseError::InvalidNiks)));
+    }
+}
