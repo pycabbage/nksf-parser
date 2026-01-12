@@ -6,25 +6,25 @@
 
 libクレートに必要な依存関係を追加する。
 
-Status: Planned
+Status: Completed
 
 ### 002: エラー型の定義
 
 ParseErrorとその関連型を定義する (error.rs)。
 
-Status: Planned
+Status: Completed
 
 ### 003: 基本的なデータ構造の定義
 
 NksfFile、NisiMetadata、NicaData、Parameterなどの構造体を定義する (types.rs)。
 
-Status: Planned
+Status: Completed
 
 ### 004: RIFFリーダーの実装
 
 RIFFファイルの読み取りとチャンク解析を実装する (riff_reader.rs)。
 
-Status: Planned
+Status: Completed
 
 ## Phase 2: MessagePackパーサーの実装
 
@@ -32,13 +32,13 @@ Status: Planned
 
 NISIチャンクのMessagePackデータをデシリアライズする (nisi_parser.rs)。
 
-Status: Planned
+Status: Completed
 
 ### 006: NICAチャンクパーサーの実装
 
 NICAチャンクのMessagePackデータをデシリアライズする (nica_parser.rs)。
 
-Status: Planned
+Status: Completed
 
 ## Phase 3: 統合パーサーの実装
 
