@@ -1,0 +1,19 @@
+- リポジトリ概要 : .nksf (Massive Xのプリセットファイル)のパーサーライブラリおよびCLIツール
+  - @lib : パーサーライブラリおよびテスト
+  - @cli : コマンドラインインターフェースツール
+- 実装方針
+  - @lib では、.nksfファイルを解析
+    - 重要: 責任分離の観点から、JSON形式の出力は行わない、JSONを想定した形式最適化も行わない
+  - @cli では、コマンドラインから.nksfファイルを解析し、JSON形式で出力
+    - JSON形式での出力は @cli で実装
+    - @cli から @lib への依存は設定済み
+- ルール
+  - サードパーティーライブラリ追加時、Cargo.tomlを直接編集してはいけない。代わりに `cargo add <package>` コマンドを使用すること
+  - コマンド実行時、必ず `pwd` コマンドを使用しカレントディレクトリを確認すること
+  - コードスタイルはRustの標準に従うこと (rustfmtを使用)
+  - プリセット毎にテストを記述し、必ずテストに合格させること
+    - lib/tests/massive_x_factory_library_tests/fixtures 以下にテスト用データを配置済み
+    - @lib/tests/massive_x_factory_library_tests/abandoned_test.rs のようなテストファイルパスを用いること
+    - テストを追加するとき、 @lib/tests/massive_x_factory_library_tests/mod.rs にモジュールを追加すること
+  - 適切な関数・構造体・ファイル分割を心がける必要がある
+  - ドキュメントコメントを適切に記述すること
