@@ -75,13 +75,19 @@ cargo add --dev <package-name>
 
 ## テスト構造
 
-### テストファイルの配置
+### テストの種類と配置
 
-- テストデータ: `lib/tests/massive_x_factory_library_tests/fixture/*.nksf`
-- テストコード: `lib/tests/massive_x_factory_library_tests/*_test.rs`
-- モジュール定義: `lib/tests/massive_x_factory_library_tests/mod.rs`
+1. **ユニットテスト**: `lib/src` 以下の各 `.rs` ファイル内に記述
+   - 各モジュールの関数・構造体の単体テスト
+   - `#[cfg(test)]` モジュール内に配置
+   - 実装ファイルと同じファイル内に記述
 
-### 新しいテストの追加手順
+2. **統合テスト**: `lib/tests` 以下に配置
+   - テストデータ: `lib/tests/massive_x_factory_library_tests/fixture/*.nksf`
+   - テストコード: `lib/tests/massive_x_factory_library_tests/*_test.rs`
+   - モジュール定義: `lib/tests/massive_x_factory_library_tests/mod.rs`
+
+### 新しい統合テストの追加手順
 
 1. `lib/tests/massive_x_factory_library_tests/` に `<preset_name>_test.rs` を作成
 2. `lib/tests/massive_x_factory_library_tests/mod.rs` に `mod <preset_name>_test;` を追加
@@ -106,6 +112,20 @@ fn test_in_mod() {
 
 ## 重要な制約
 
+### 責任分離
+
 - ライブラリ (`lib`) では JSON 出力を実装しない
 - CLI (`cli`) でのみ JSON 形式での出力を実装
+
+### パース要件
+
+- **完全なバイト解析**: .nksfファイルの全てのバイトを解析する
+- **データの欠損禁止**: 1バイトも見逃さず、「不明なデータ」として捨てることを許可しない
+- すべてのチャンクとフィールドを構造化して保持する
+- 解析できないデータがある場合はエラーを返す（無視しない）
+
+### テスト要件
+
 - すべてのプリセットに対してテストを記述し、必ずパスさせる
+- `lib/src` 以下の各 `.rs` ファイルにユニットテストを記述する
+- `lib/tests` 以下に統合テストを記述する（各プリセットごと）
