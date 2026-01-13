@@ -56,6 +56,9 @@ mod tests {
     #[test]
     fn test_incomplete_parse_error() {
         let err = ParseError::IncompleteParse(100, 500);
-        assert_eq!(err.to_string(), "Incomplete parse: 100 bytes remaining at offset 500");
+        assert_eq!(
+            err.to_string(),
+            "Incomplete parse: 100 bytes remaining at offset 500"
+        );
     }
 }

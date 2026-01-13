@@ -76,19 +76,19 @@ Status: Completed
 
 PLIDチャンクパーサーを実装し、メインパーサーに統合する。
 
-Status: Planned
+Status: Completed
 
 ### 009-004: PCHKパーサーの実装
 
 PCHKチャンクパーサー（zlib展開 + MessagePackストリーム）を実装する。
 
-Status: Planned
+Status: Completed
 
 ### 009-005: NksfFile構造の更新とテスト
 
 NksfFile構造体を更新し、unknown_chunksからPLID/PCHKを削除、テストを更新する。
 
-Status: Planned
+Status: Completed
 
 ## Phase 4: CLIツールの実装
 

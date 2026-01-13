@@ -7,8 +7,10 @@ pub struct NksfFile {
     pub metadata: NisiMetadata,
     /// パラメータデータ（NICAチャンク）
     pub parameters: NicaData,
-    /// その他の未知のチャンク（完全なバイト解析のため）
-    pub unknown_chunks: Vec<UnknownChunk>,
+    /// プラグインID（PLIDチャンク）
+    pub plugin_id: PlidData,
+    /// プラグインチャンク（PCHKチャンク）
+    pub plugin_chunk: PchkData,
 }
 
 /// NISIチャンクのメタデータ
@@ -44,6 +46,54 @@ pub struct NisiMetadata {
 /// 現時点では全データを保持するためにserde_json::Valueを使用
 pub type NiInternal = serde_json::Value;
 
+/// PLIDチャンク（Plugin ID）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlidData {
+    /// VSTマジックナンバー
+    #[serde(rename = "VST.magic")]
+    pub vst_magic: u32,
+
+    /// プラグイン名（オプション）
+    #[serde(rename = "pluginName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_name: Option<String>,
+
+    /// プラグインベンダー名（オプション）
+    #[serde(rename = "pluginVendor")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_vendor: Option<String>,
+}
+
+/// PCHKチャンク（Plugin Chunk）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PchkData {
+    /// ヘッダー情報
+    pub header: PchkHeader,
+
+    /// 全MessagePack値（268個）
+    /// 構造: [name1, count1, data1, name2, count2, data2, ...]
+    pub values: Vec<serde_json::Value>,
+}
+
+/// PCHKヘッダー（20バイト）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PchkHeader {
+    /// バージョン（通常1）
+    pub version: u32,
+
+    /// 不明フィールド1（通常2）
+    pub field1: u32,
+
+    /// 不明フィールド2（通常2）
+    pub field2: u32,
+
+    /// 圧縮データサイズ
+    pub compressed_size: u32,
+
+    /// 不明フィールド3
+    pub field3: u32,
+}
+
 /// NICAチャンクのパラメータデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NicaData {
@@ -64,17 +114,6 @@ pub struct Parameter {
     pub vflag: bool,
 }
 
-/// 未知のチャンク（完全なバイト解析のため保持）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UnknownChunk {
-    /// チャンクID（4文字）
-    pub id: String,
-    /// チャンクのバージョン（存在する場合）
-    pub version: Option<u32>,
-    /// 生データ
-    pub data: Vec<u8>,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,18 +128,6 @@ mod tests {
         };
         assert_eq!(param.id, 0);
         assert_eq!(param.name, "Test Parameter");
-    }
-
-    #[test]
-    fn test_unknown_chunk_creation() {
-        let chunk = UnknownChunk {
-            id: "TEST".to_string(),
-            version: Some(1),
-            data: vec![0x01, 0x02, 0x03],
-        };
-        assert_eq!(chunk.id, "TEST");
-        assert_eq!(chunk.version, Some(1));
-        assert_eq!(chunk.data.len(), 3);
     }
 
     #[test]

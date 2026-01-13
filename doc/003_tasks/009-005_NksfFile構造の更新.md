@@ -6,19 +6,19 @@ NksfFile構造体を更新し、unknown_chunksからPLID/PCHKを完全に削除�
 
 ## 完了条件
 
-- [ ] `NksfFile` 構造体が更新されている（plugin_id, plugin_chunkフィールド追加）
-- [ ] `unknown_chunks` フィールドを `NksfFile` から完全に削除
-- [ ] `UnknownChunk` 構造体を `types.rs` から削除
-- [ ] `test_unknown_chunk_creation` テストを `types.rs` から削除
-- [ ] `test_abandoned_unknown_chunks` テストを `abandoned_test.rs` から削除
-- [ ] parser.rsの`unknown_chunks`関連ロジックを全て削除
-- [ ] lib.rsのエクスポートから `UnknownChunk` を削除
-- [ ] `abandoned_test.rs` の全テストが更新され、成功すること
-- [ ] PLIDフィールドのテストが追加されている
-- [ ] PCHKフィールドのテストが追加されている
-- [ ] `cargo test -p nksf-parser` で全テストが成功すること
-- [ ] `cargo fmt` でフォーマットされていること
-- [ ] `cargo clippy` で警告が出ないこと
+- [x] `NksfFile` 構造体が更新されている（plugin_id, plugin_chunkフィールド追加）
+- [x] `unknown_chunks` フィールドを `NksfFile` から完全に削除
+- [x] `UnknownChunk` 構造体を `types.rs` から削除
+- [x] `test_unknown_chunk_creation` テストを `types.rs` から削除
+- [x] `test_abandoned_unknown_chunks` テストを `abandoned_test.rs` から削除
+- [x] parser.rsの`unknown_chunks`関連ロジックを全て削除（未知チャンクはエラーを返す）
+- [x] lib.rsのエクスポートから `UnknownChunk` を削除
+- [x] `abandoned_test.rs` の全テストが更新され、成功すること
+- [x] PLIDフィールドのテストが追加されている（test_abandoned_plid）
+- [x] PCHKフィールドのテストが追加されている（test_abandoned_pchk）
+- [x] `cargo test -p nksf-parser` で全テストが成功すること
+- [x] `cargo fmt` でフォーマットされていること
+- [x] `cargo clippy` で警告が出ないこと
 
 ## 実装ガイド
 

@@ -1,11 +1,13 @@
 use crate::error::{ParseError, Result};
-use crate::riff_reader::RiffReader;
-use crate::nisi_parser::parse_nisi_chunk;
 use crate::nica_parser::parse_nica_chunk;
-use crate::types::{NksfFile, NisiMetadata, NicaData, UnknownChunk};
-use std::path::Path;
+use crate::nisi_parser::parse_nisi_chunk;
+use crate::pchk_parser::parse_pchk_chunk;
+use crate::plid_parser::parse_plid_chunk;
+use crate::riff_reader::RiffReader;
+use crate::types::{NicaData, NisiMetadata, NksfFile, PchkData, PlidData};
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek};
+use std::path::Path;
 
 /// .nksfファイルをパスから解析
 ///
@@ -72,12 +74,12 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
 
     let mut metadata: Option<NisiMetadata> = None;
     let mut parameters: Option<NicaData> = None;
-    let mut unknown_chunks: Vec<UnknownChunk> = Vec::new();
+    let mut plugin_id: Option<PlidData> = None;
+    let mut plugin_chunk: Option<PchkData> = None;
 
     // 全チャンクを処理
     while let Some(chunk) = riff_reader.next_chunk()? {
-        let chunk_id = std::str::from_utf8(&chunk.id)
-            .unwrap_or("????");
+        let chunk_id = std::str::from_utf8(&chunk.id).unwrap_or("????");
         let data = riff_reader.read_chunk_data(&chunk)?;
 
         match chunk_id {
@@ -87,13 +89,15 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
             "NICA" => {
                 parameters = Some(parse_nica_chunk(&data)?);
             }
+            "PLID" => {
+                plugin_id = Some(parse_plid_chunk(&data)?);
+            }
+            "PCHK" => {
+                plugin_chunk = Some(parse_pchk_chunk(&data)?);
+            }
             _ => {
-                // 未知のチャンクを保存（完全なバイト解析のため）
-                unknown_chunks.push(UnknownChunk {
-                    id: chunk_id.to_string(),
-                    version: None, // 必要に応じてバージョンを抽出
-                    data,
-                });
+                // 未知のチャンクが見つかった場合はエラー
+                return Err(ParseError::UnknownChunk(chunk_id.to_string()));
             }
         }
     }
@@ -104,11 +108,14 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
     // 必須チャンクの確認
     let metadata = metadata.ok_or(ParseError::InvalidNiks)?;
     let parameters = parameters.ok_or(ParseError::InvalidNiks)?;
+    let plugin_id = plugin_id.ok_or(ParseError::InvalidNiks)?;
+    let plugin_chunk = plugin_chunk.ok_or(ParseError::InvalidNiks)?;
 
     Ok(NksfFile {
         metadata,
         parameters,
-        unknown_chunks,
+        plugin_id,
+        plugin_chunk,
     })
 }
 

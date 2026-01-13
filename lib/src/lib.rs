@@ -27,20 +27,17 @@
 
 // モジュール宣言
 mod error;
-mod types;
-mod riff_reader;
-mod nisi_parser;
 mod nica_parser;
+mod nisi_parser;
 mod parser;
+mod pchk_parser;
+mod plid_parser;
+mod riff_reader;
+mod types;
 
 // パブリックAPIのエクスポート
 pub use error::{ParseError, Result};
-pub use types::{
-    NksfFile,
-    NisiMetadata,
-    NiInternal,
-    NicaData,
-    Parameter,
-    UnknownChunk,
-};
 pub use parser::{parse_nksf, parse_nksf_from_bytes};
+pub use types::{
+    NiInternal, NicaData, NisiMetadata, NksfFile, Parameter, PchkData, PchkHeader, PlidData,
+};
