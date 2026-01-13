@@ -14,3 +14,4 @@ thiserror = "2.0.17"
 
 [dev-dependencies]
 flate2 = "1.1.8"
+phf = { version = "0.13.1", features = ["macros"] }

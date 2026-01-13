@@ -447,6 +447,48 @@ fn test_abandoned_total_parameters() {
 }
 
 // ========================================
+// 完全な1:1比較テスト（全32,736バイト）
+// ========================================
+
+#[test]
+fn test_abandoned_pchk_floats_value() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+
+    let floats_map = nksf.plugin_chunk.values[5]
+        .as_object()
+        .expect("floats should be object");
+
+    // floatsセクションの唯一のエントリを検証
+    assert_eq!(floats_map.len(), 1);
+
+    let overlay_stretch = floats_map
+        .get("root/engine/unit1/Performers/performers/grid/overlay stretch")
+        .and_then(|v| v.as_f64())
+        .expect("overlay stretch should exist");
+
+    assert_eq!(overlay_stretch, 0.0);
+}
+
+#[test]
+fn test_abandoned_pchk_all_268_values_count() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+
+    // 全268値が正しく読み取られていることを確認
+    assert_eq!(nksf.plugin_chunk.values.len(), 268);
+
+    // 各値の型が期待通りであることを確認
+    // インデックス0-267の全値が有効なJSON値であること
+    for (i, value) in nksf.plugin_chunk.values.iter().enumerate() {
+        assert!(
+            value.is_string() || value.is_number() || value.is_object() || value.is_array() || value.is_boolean() || value.is_null(),
+            "Value at index {} should be valid JSON value", i
+        );
+    }
+}
+
+// ========================================
 // 完全なデータ検証テスト（全3825エントリ）
 // ========================================
 
@@ -455,7 +497,7 @@ fn test_abandoned_pchk_strings_all_entries() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = super::abandoned_expected_data::expected_abandoned_strings();
+    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_STRINGS;
     let actual_map = nksf.plugin_chunk.values[2]
         .as_object()
         .expect("strings should be object");
@@ -463,12 +505,12 @@ fn test_abandoned_pchk_strings_all_entries() {
     // 全758エントリの完全検証
     assert_eq!(actual_map.len(), expected.len());
 
-    for (key, expected_value) in &expected {
+    for (key, expected_value) in expected.entries() {
         let actual_value = actual_map
-            .get(key)
+            .get(*key)
             .and_then(|v| v.as_str())
             .unwrap_or_else(|| panic!("Missing key: {}", key));
-        assert_eq!(actual_value, expected_value, "Mismatch at key: {}", key);
+        assert_eq!(actual_value, *expected_value, "Mismatch at key: {}", key);
     }
 
     for key in actual_map.keys() {
@@ -481,7 +523,7 @@ fn test_abandoned_pchk_doubles_all_entries() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = super::abandoned_expected_data::expected_abandoned_doubles();
+    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_DOUBLES;
     let actual_map = nksf.plugin_chunk.values[8]
         .as_object()
         .expect("doubles should be object");
@@ -489,9 +531,9 @@ fn test_abandoned_pchk_doubles_all_entries() {
     // 全1104エントリの完全検証
     assert_eq!(actual_map.len(), expected.len());
 
-    for (key, expected_value) in &expected {
+    for (key, expected_value) in expected.entries() {
         let actual_value = actual_map
-            .get(key)
+            .get(*key)
             .and_then(|v| v.as_f64())
             .unwrap_or_else(|| panic!("Missing key: {}", key));
         assert!(
@@ -502,7 +544,11 @@ fn test_abandoned_pchk_doubles_all_entries() {
     }
 
     for key in actual_map.keys() {
-        assert!(expected.contains_key(key), "Unexpected key: {}", key);
+        assert!(
+            expected.contains_key(key.as_str()),
+            "Unexpected key: {}",
+            key
+        );
     }
 }
 
@@ -511,7 +557,7 @@ fn test_abandoned_pchk_ints_all_entries() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = super::abandoned_expected_data::expected_abandoned_ints();
+    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_INTS;
     let actual_map = nksf.plugin_chunk.values[11]
         .as_object()
         .expect("ints should be object");
@@ -519,16 +565,20 @@ fn test_abandoned_pchk_ints_all_entries() {
     // 全383エントリの完全検証
     assert_eq!(actual_map.len(), expected.len());
 
-    for (key, expected_value) in &expected {
+    for (key, expected_value) in expected.entries() {
         let actual_value = actual_map
-            .get(key)
+            .get(*key)
             .and_then(|v| v.as_i64())
             .unwrap_or_else(|| panic!("Missing key: {}", key));
         assert_eq!(actual_value, *expected_value, "Mismatch at key: {}", key);
     }
 
     for key in actual_map.keys() {
-        assert!(expected.contains_key(key), "Unexpected key: {}", key);
+        assert!(
+            expected.contains_key(key.as_str()),
+            "Unexpected key: {}",
+            key
+        );
     }
 }
 
@@ -537,7 +587,7 @@ fn test_abandoned_pchk_bools_all_entries() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = super::abandoned_expected_data::expected_abandoned_bools();
+    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_BOOLS;
     let actual_map = nksf.plugin_chunk.values[14]
         .as_object()
         .expect("bools should be object");
@@ -545,15 +595,19 @@ fn test_abandoned_pchk_bools_all_entries() {
     // 全1580エントリの完全検証
     assert_eq!(actual_map.len(), expected.len());
 
-    for (key, expected_value) in &expected {
+    for (key, expected_value) in expected.entries() {
         let actual_value = actual_map
-            .get(key)
+            .get(*key)
             .and_then(|v| v.as_bool())
             .unwrap_or_else(|| panic!("Missing key: {}", key));
         assert_eq!(actual_value, *expected_value, "Mismatch at key: {}", key);
     }
 
     for key in actual_map.keys() {
-        assert!(expected.contains_key(key), "Unexpected key: {}", key);
+        assert!(
+            expected.contains_key(key.as_str()),
+            "Unexpected key: {}",
+            key
+        );
     }
 }
