@@ -1,6 +1,8 @@
 use nksf_parser::{ParseError, parse_nksf};
 use std::path::PathBuf;
 
+use super::abandoned_expected_data as expected;
+
 fn get_fixture_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -8,6 +10,10 @@ fn get_fixture_path() -> PathBuf {
         .join("fixture")
         .join("Abandoned.nksf")
 }
+
+// =====================================
+// 基本テスト
+// =====================================
 
 #[test]
 fn test_abandoned_parse_success() {
@@ -21,137 +27,229 @@ fn test_abandoned_parse_success() {
 }
 
 #[test]
-fn test_abandoned_metadata_complete() {
+fn test_abandoned_complete_parse() {
+    let path = get_fixture_path();
+    let result = parse_nksf(&path);
+
+    match result {
+        Ok(_) => { /* OK */ }
+        Err(ParseError::IncompleteParse(remaining, offset)) => {
+            panic!(
+                "Incomplete parse: {} bytes remaining at offset {}",
+                remaining, offset
+            );
+        }
+        Err(e) => {
+            panic!("Unexpected error: {:?}", e);
+        }
+    }
+}
+
+// =====================================
+// NISIチャンク検証
+// =====================================
+
+#[test]
+fn test_abandoned_nisi_metadata() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // 全メタデータフィールドの検証
-    assert_eq!(nksf.metadata.name, "Abandoned");
-    assert_eq!(nksf.metadata.author, "Torsten Fassbender");
-    assert_eq!(nksf.metadata.vendor, "Native Instruments");
-    assert_eq!(nksf.metadata.device_type, "INST");
-    assert_eq!(nksf.metadata.uuid, "f890b345-58f9-4f54-815e-87091547006e");
-    assert_eq!(nksf.metadata.comment, "Massive X Library 1.4");
+    let exp = &expected::EXPECTED_NISI;
 
-    // bankchainの検証
-    assert_eq!(nksf.metadata.bankchain.len(), 3);
-    assert_eq!(nksf.metadata.bankchain[0], "Massive X");
-    assert_eq!(nksf.metadata.bankchain[1], "Massive X Library");
-    assert_eq!(nksf.metadata.bankchain[2], "");
+    assert_eq!(nksf.metadata.name, exp.name);
+    assert_eq!(nksf.metadata.author, exp.author);
+    assert_eq!(nksf.metadata.vendor, exp.vendor);
+    assert_eq!(nksf.metadata.device_type, exp.device_type);
+    assert_eq!(nksf.metadata.uuid, exp.uuid);
+    assert_eq!(nksf.metadata.comment, exp.comment);
 
-    // charactersの検証
-    assert_eq!(nksf.metadata.characters.len(), 3);
-    assert_eq!(nksf.metadata.characters[0], "Synthetic");
-    assert_eq!(nksf.metadata.characters[1], "Dark");
-    assert_eq!(nksf.metadata.characters[2], "Distorted");
+    assert_eq!(nksf.metadata.bankchain.len(), exp.bankchain.len());
+    for (i, expected_val) in exp.bankchain.iter().enumerate() {
+        assert_eq!(nksf.metadata.bankchain[i], *expected_val);
+    }
 
-    // modesの検証
-    assert_eq!(nksf.metadata.modes.len(), 2);
-    assert_eq!(nksf.metadata.modes[0], "_Torsten Fassbender");
-    assert_eq!(nksf.metadata.modes[1], "__Best of the Rest");
+    assert_eq!(nksf.metadata.characters.len(), exp.characters.len());
+    for (i, expected_val) in exp.characters.iter().enumerate() {
+        assert_eq!(nksf.metadata.characters[i], *expected_val);
+    }
 
-    // typesの検証
-    assert_eq!(nksf.metadata.types.len(), 2);
-    assert_eq!(nksf.metadata.types[0].len(), 1);
-    assert_eq!(nksf.metadata.types[0][0], "Synth Misc");
-    assert_eq!(nksf.metadata.types[1].len(), 2);
-    assert_eq!(nksf.metadata.types[1][0], "Synth Misc");
-    assert_eq!(nksf.metadata.types[1][1], "FX");
+    assert_eq!(nksf.metadata.modes.len(), exp.modes.len());
+    for (i, expected_val) in exp.modes.iter().enumerate() {
+        assert_eq!(nksf.metadata.modes[i], *expected_val);
+    }
 
-    // __ni_internalの検証
+    assert_eq!(nksf.metadata.types.len(), exp.types.len());
+    for (i, expected_arr) in exp.types.iter().enumerate() {
+        assert_eq!(nksf.metadata.types[i].len(), expected_arr.len());
+        for (j, expected_val) in expected_arr.iter().enumerate() {
+            assert_eq!(nksf.metadata.types[i][j], *expected_val);
+        }
+    }
+
     assert_eq!(
         nksf.metadata.ni_internal,
-        serde_json::Value::String("BRIB".to_string())
+        serde_json::Value::String(exp.ni_internal.to_string())
     );
+}
+
+// =====================================
+// NICAチャンク検証
+// =====================================
+
+#[test]
+fn test_abandoned_nica_parameters_0() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+
+    let params = nksf.parameters.ni8[0]
+        .as_array()
+        .expect("ni8[0] should be array");
+    let expected = expected::EXPECTED_NICA_PARAMS_0;
+
+    assert_eq!(params.len(), expected.len());
+
+    for (i, exp) in expected.iter().enumerate() {
+        let param = &params[i];
+        assert_eq!(
+            param["id"].as_u64().unwrap(),
+            exp.id,
+            "Param {} id mismatch",
+            i
+        );
+        assert_eq!(
+            param["name"].as_str().unwrap(),
+            exp.name,
+            "Param {} name mismatch",
+            i
+        );
+        assert_eq!(
+            param["autoname"].as_bool().unwrap(),
+            exp.autoname,
+            "Param {} autoname mismatch",
+            i
+        );
+        assert_eq!(
+            param["vflag"].as_bool().unwrap(),
+            exp.vflag,
+            "Param {} vflag mismatch",
+            i
+        );
+    }
 }
 
 #[test]
-fn test_abandoned_parameters_complete() {
+fn test_abandoned_nica_parameters_1() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // ni8配列の検証
-    assert_eq!(
-        nksf.parameters.ni8.len(),
-        2,
-        "Should have 2 elements in ni8 array"
-    );
-
-    // ni8[0]: 8個のパラメータ（ID 0-7）
-    let params_0 = nksf.parameters.ni8[0]
-        .as_array()
-        .expect("ni8[0] should be array");
-    assert_eq!(params_0.len(), 8, "ni8[0] should have 8 parameters");
-
-    // 各パラメータの詳細検証
-    let param_names_0 = [
-        "WT Pos 1",
-        "WT Pos 2",
-        "Osc 1 Lvl",
-        "Osc 2 Lvl",
-        "Filter",
-        "Excite",
-        "Delay",
-        "Reverb",
-    ];
-    for (i, expected_name) in param_names_0.iter().enumerate() {
-        let param = &params_0[i];
-        assert_eq!(param["id"].as_u64().unwrap(), i as u64);
-        assert_eq!(param["name"].as_str().unwrap(), *expected_name);
-        assert_eq!(param["autoname"].as_bool().unwrap(), true);
-        assert_eq!(param["vflag"].as_bool().unwrap(), false);
-    }
-
-    // ni8[1]: 8個のパラメータ（ID 8-15）
-    let params_1 = nksf.parameters.ni8[1]
+    let params = nksf.parameters.ni8[1]
         .as_array()
         .expect("ni8[1] should be array");
-    assert_eq!(params_1.len(), 8, "ni8[1] should have 8 parameters");
+    let expected = expected::EXPECTED_NICA_PARAMS_1;
 
-    // Macro 9-16の検証
-    for (i, param) in params_1.iter().enumerate() {
-        let expected_id = i + 8;
-        let expected_name = format!("Macro {}", expected_id + 1);
-        assert_eq!(param["id"].as_u64().unwrap(), expected_id as u64);
-        assert_eq!(param["name"].as_str().unwrap(), expected_name);
-        assert_eq!(param["autoname"].as_bool().unwrap(), true);
-        assert_eq!(param["vflag"].as_bool().unwrap(), false);
+    assert_eq!(params.len(), expected.len());
+
+    for (i, exp) in expected.iter().enumerate() {
+        let param = &params[i];
+        assert_eq!(param["id"].as_u64().unwrap(), exp.id);
+        assert_eq!(param["name"].as_str().unwrap(), exp.name);
+        assert_eq!(param["autoname"].as_bool().unwrap(), exp.autoname);
+        assert_eq!(param["vflag"].as_bool().unwrap(), exp.vflag);
     }
 }
+
+#[test]
+fn test_abandoned_nica_total_parameters() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+
+    let total: usize = nksf
+        .parameters
+        .ni8
+        .iter()
+        .filter_map(|v| v.as_array())
+        .map(|arr| arr.len())
+        .sum();
+
+    assert_eq!(total, 16);
+}
+
+// =====================================
+// PLIDチャンク検証
+// =====================================
 
 #[test]
 fn test_abandoned_plid() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // PLID検証
-    assert_eq!(nksf.plugin_id.vst_magic, 1315513416);
-    assert_eq!(nksf.plugin_id.plugin_name, Some("Massive X".to_string()));
+    assert_eq!(nksf.plugin_id.vst_magic, expected::EXPECTED_PLID_VST_MAGIC);
     assert_eq!(
-        nksf.plugin_id.plugin_vendor,
-        Some("Native Instruments".to_string())
+        nksf.plugin_id.plugin_name.as_deref(),
+        expected::EXPECTED_PLID_PLUGIN_NAME
+    );
+    assert_eq!(
+        nksf.plugin_id.plugin_vendor.as_deref(),
+        expected::EXPECTED_PLID_PLUGIN_VENDOR
     );
 }
+
+// =====================================
+// PCHKチャンク - 構造検証
+// =====================================
 
 #[test]
 fn test_abandoned_pchk_header() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // PCHKヘッダー検証
-    assert_eq!(nksf.plugin_chunk.header.version, 1);
-    assert_eq!(nksf.plugin_chunk.header.field1, 2);
-    assert_eq!(nksf.plugin_chunk.header.field2, 2);
-    assert_eq!(nksf.plugin_chunk.header.compressed_size, 31684);
+    assert_eq!(
+        nksf.plugin_chunk.header.version,
+        expected::EXPECTED_PCHK_VERSION
+    );
+    assert_eq!(
+        nksf.plugin_chunk.header.field1,
+        expected::EXPECTED_PCHK_FIELD1
+    );
+    assert_eq!(
+        nksf.plugin_chunk.header.field2,
+        expected::EXPECTED_PCHK_FIELD2
+    );
+    assert_eq!(
+        nksf.plugin_chunk.header.compressed_size,
+        expected::EXPECTED_PCHK_COMPRESSED_SIZE
+    );
 }
 
 #[test]
-fn test_abandoned_pchk_structure() {
+fn test_abandoned_pchk_values_count() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // MessagePack値の総数検証
-    assert_eq!(nksf.plugin_chunk.values.len(), 268);
+    assert_eq!(
+        nksf.plugin_chunk.values.len(),
+        expected::EXPECTED_PCHK_VALUES_COUNT
+    );
+
+    // 全268値が有効なJSON値であること
+    for (i, value) in nksf.plugin_chunk.values.iter().enumerate() {
+        assert!(
+            value.is_string()
+                || value.is_number()
+                || value.is_object()
+                || value.is_array()
+                || value.is_boolean()
+                || value.is_null(),
+            "Value at index {} should be valid JSON value",
+            i
+        );
+    }
+}
+
+#[test]
+fn test_abandoned_pchk_section_structure() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
 
     // セクション名の存在確認
     let section_names: Vec<&str> = nksf
@@ -174,137 +272,84 @@ fn test_abandoned_pchk_structure() {
     assert!(section_names.contains(&"stringVecs"));
 }
 
+// =====================================
+// PCHKチャンク - 個別セクション構造検証
+// =====================================
+
 #[test]
-fn test_abandoned_pchk_strings_section() {
+fn test_abandoned_pchk_section_counts() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // stringsセクション: values[0] = "strings", values[1] = 759, values[2] = Map
-    assert_eq!(nksf.plugin_chunk.values[0].as_str(), Some("strings"));
-    assert_eq!(nksf.plugin_chunk.values[1].as_u64(), Some(759));
+    struct Section {
+        name_idx: usize,
+        count_idx: usize,
+        data_idx: usize,
+        name: &'static str,
+        declared: u64,
+        actual: usize,
+    }
 
-    let strings_map = nksf.plugin_chunk.values[2]
-        .as_object()
-        .expect("strings section should be an object");
+    let sections = [
+        Section {
+            name_idx: 0,
+            count_idx: 1,
+            data_idx: 2,
+            name: "strings",
+            declared: 759,
+            actual: 758,
+        },
+        Section {
+            name_idx: 3,
+            count_idx: 4,
+            data_idx: 5,
+            name: "floats",
+            declared: 2,
+            actual: 1,
+        },
+        Section {
+            name_idx: 6,
+            count_idx: 7,
+            data_idx: 8,
+            name: "doubles",
+            declared: 1105,
+            actual: 1104,
+        },
+        Section {
+            name_idx: 9,
+            count_idx: 10,
+            data_idx: 11,
+            name: "ints",
+            declared: 384,
+            actual: 383,
+        },
+        Section {
+            name_idx: 12,
+            count_idx: 13,
+            data_idx: 14,
+            name: "bools",
+            declared: 1581,
+            actual: 1580,
+        },
+    ];
 
-    // エントリ数検証
-    assert_eq!(strings_map.len(), 758);
-
-    // 重要なキーの検証
-    assert_eq!(
-        strings_map.get("meta/hash").and_then(|v| v.as_str()),
-        Some("1cde7b7a6d767b6bec5a71498bd875cf")
-    );
-    assert_eq!(
-        strings_map.get("meta/presetName").and_then(|v| v.as_str()),
-        Some("Abandoned")
-    );
-    assert_eq!(
-        strings_map
-            .get("root/engine/global/macros/macro1/macroName/value")
-            .and_then(|v| v.as_str()),
-        Some("WT Pos 1")
-    );
-    assert_eq!(
-        strings_map
-            .get("root/engine/global/macros/macro8/macroName/value")
-            .and_then(|v| v.as_str()),
-        Some("Reverb")
-    );
-}
-
-#[test]
-fn test_abandoned_pchk_floats_section() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // floatsセクション: values[3] = "floats", values[4] = 2, values[5] = Map
-    assert_eq!(nksf.plugin_chunk.values[3].as_str(), Some("floats"));
-    assert_eq!(nksf.plugin_chunk.values[4].as_u64(), Some(2));
-
-    let floats_map = nksf.plugin_chunk.values[5]
-        .as_object()
-        .expect("floats section should be an object");
-
-    assert_eq!(floats_map.len(), 1);
-}
-
-#[test]
-fn test_abandoned_pchk_doubles_section() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // doublesセクション: values[6] = "doubles", values[7] = 1105, values[8] = Map
-    assert_eq!(nksf.plugin_chunk.values[6].as_str(), Some("doubles"));
-    assert_eq!(nksf.plugin_chunk.values[7].as_u64(), Some(1105));
-
-    let doubles_map = nksf.plugin_chunk.values[8]
-        .as_object()
-        .expect("doubles section should be an object");
-
-    // エントリ数検証
-    assert_eq!(doubles_map.len(), 1104);
-
-    // マクロ値の存在確認
-    assert!(
-        doubles_map.contains_key("root/engine/global/macros/macro1/macroValue/normalizedValue")
-    );
-    assert!(
-        doubles_map.contains_key("root/engine/global/macros/macro8/macroValue/normalizedValue")
-    );
-}
-
-#[test]
-fn test_abandoned_pchk_ints_section() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // intsセクション: values[9] = "ints", values[10] = 384, values[11] = Map
-    assert_eq!(nksf.plugin_chunk.values[9].as_str(), Some("ints"));
-    assert_eq!(nksf.plugin_chunk.values[10].as_u64(), Some(384));
-
-    let ints_map = nksf.plugin_chunk.values[11]
-        .as_object()
-        .expect("ints section should be an object");
-
-    // エントリ数検証
-    assert_eq!(ints_map.len(), 383);
-
-    // メタデータの検証
-    assert_eq!(
-        ints_map.get("meta/numUnits").and_then(|v| v.as_u64()),
-        Some(1)
-    );
-    assert_eq!(ints_map.get("meta/type").and_then(|v| v.as_u64()), Some(0));
-}
-
-#[test]
-fn test_abandoned_pchk_bools_section() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // boolsセクション: values[12] = "bools", values[13] = 1581, values[14] = Map
-    assert_eq!(nksf.plugin_chunk.values[12].as_str(), Some("bools"));
-    assert_eq!(nksf.plugin_chunk.values[13].as_u64(), Some(1581));
-
-    let bools_map = nksf.plugin_chunk.values[14]
-        .as_object()
-        .expect("bools section should be an object");
-
-    // エントリ数検証
-    assert_eq!(bools_map.len(), 1580);
-
-    // メタデータの検証
-    assert_eq!(
-        bools_map.get("meta/hasIcon").and_then(|v| v.as_bool()),
-        Some(false)
-    );
-    assert_eq!(
-        bools_map
-            .get("meta/presetModified")
-            .and_then(|v| v.as_bool()),
-        Some(true)
-    );
+    for sec in &sections {
+        assert_eq!(
+            nksf.plugin_chunk.values[sec.name_idx].as_str(),
+            Some(sec.name)
+        );
+        assert_eq!(
+            nksf.plugin_chunk.values[sec.count_idx].as_u64(),
+            Some(sec.declared)
+        );
+        assert_eq!(
+            nksf.plugin_chunk.values[sec.data_idx]
+                .as_object()
+                .unwrap()
+                .len(),
+            sec.actual
+        );
+    }
 }
 
 #[test]
@@ -312,200 +357,35 @@ fn test_abandoned_pchk_vec_sections() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // charVecsセクション
+    // charVecs
     assert_eq!(nksf.plugin_chunk.values[15].as_str(), Some("charVecs"));
     assert_eq!(nksf.plugin_chunk.values[16].as_u64(), Some(1));
 
-    // intVecsセクション
+    // intVecs
     assert_eq!(nksf.plugin_chunk.values[17].as_str(), Some("intVecs"));
     assert_eq!(nksf.plugin_chunk.values[18].as_u64(), Some(42));
 
-    // intVecsの最初のデータ（values[19]以降）
-    // パターン: サイズ, キー, 配列
+    // 最初のデータペア
     assert_eq!(nksf.plugin_chunk.values[19].as_u64(), Some(41));
     assert!(nksf.plugin_chunk.values[20].as_str().is_some());
-    assert!(nksf.plugin_chunk.values[21].as_array().is_some());
-
-    // 配列の検証
-    let first_array = nksf.plugin_chunk.values[21]
-        .as_array()
-        .expect("should be array");
-    assert_eq!(first_array.len(), 4);
+    assert_eq!(nksf.plugin_chunk.values[21].as_array().unwrap().len(), 4);
 }
 
+// =====================================
+// PCHKチャンク - 完全データ検証（全3826エントリ）
+// =====================================
+
 #[test]
-fn test_abandoned_pchk_all_sections_counts() {
+fn test_abandoned_pchk_strings_all() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    // 各セクションの宣言数と実際数の検証
-    struct SectionInfo {
-        name_idx: usize,
-        count_idx: usize,
-        data_idx: usize,
-        expected_name: &'static str,
-        expected_count: u64,
-        expected_actual: usize,
-    }
+    let expected_map = &expected::EXPECTED_ABANDONED_STRINGS;
+    let actual_map = nksf.plugin_chunk.values[2].as_object().unwrap();
 
-    let sections = vec![
-        SectionInfo {
-            name_idx: 0,
-            count_idx: 1,
-            data_idx: 2,
-            expected_name: "strings",
-            expected_count: 759,
-            expected_actual: 758,
-        },
-        SectionInfo {
-            name_idx: 3,
-            count_idx: 4,
-            data_idx: 5,
-            expected_name: "floats",
-            expected_count: 2,
-            expected_actual: 1,
-        },
-        SectionInfo {
-            name_idx: 6,
-            count_idx: 7,
-            data_idx: 8,
-            expected_name: "doubles",
-            expected_count: 1105,
-            expected_actual: 1104,
-        },
-        SectionInfo {
-            name_idx: 9,
-            count_idx: 10,
-            data_idx: 11,
-            expected_name: "ints",
-            expected_count: 384,
-            expected_actual: 383,
-        },
-        SectionInfo {
-            name_idx: 12,
-            count_idx: 13,
-            data_idx: 14,
-            expected_name: "bools",
-            expected_count: 1581,
-            expected_actual: 1580,
-        },
-    ];
+    assert_eq!(actual_map.len(), expected_map.len());
 
-    for section in sections {
-        assert_eq!(
-            nksf.plugin_chunk.values[section.name_idx].as_str(),
-            Some(section.expected_name)
-        );
-        assert_eq!(
-            nksf.plugin_chunk.values[section.count_idx].as_u64(),
-            Some(section.expected_count)
-        );
-
-        let map = nksf.plugin_chunk.values[section.data_idx]
-            .as_object()
-            .expect(&format!("{} should be object", section.expected_name));
-        assert_eq!(map.len(), section.expected_actual);
-    }
-}
-
-#[test]
-fn test_abandoned_complete_parse() {
-    let path = get_fixture_path();
-    let result = parse_nksf(&path);
-
-    // 完全なバイト解析が行われたことを確認
-    // IncompleteParse エラーが発生しないこと
-    match result {
-        Ok(_) => { /* OK */ }
-        Err(ParseError::IncompleteParse(remaining, offset)) => {
-            panic!(
-                "Incomplete parse: {} bytes remaining at offset {}",
-                remaining, offset
-            );
-        }
-        Err(e) => {
-            panic!("Unexpected error: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_abandoned_total_parameters() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // パラメータの合計数を検証（8 + 8 = 16個）
-    let total_params: usize = nksf
-        .parameters
-        .ni8
-        .iter()
-        .filter_map(|v| v.as_array())
-        .map(|arr| arr.len())
-        .sum();
-
-    assert_eq!(total_params, 16, "Should have 16 parameters in total");
-}
-
-// ========================================
-// 完全な1:1比較テスト（全32,736バイト）
-// ========================================
-
-#[test]
-fn test_abandoned_pchk_floats_value() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    let floats_map = nksf.plugin_chunk.values[5]
-        .as_object()
-        .expect("floats should be object");
-
-    // floatsセクションの唯一のエントリを検証
-    assert_eq!(floats_map.len(), 1);
-
-    let overlay_stretch = floats_map
-        .get("root/engine/unit1/Performers/performers/grid/overlay stretch")
-        .and_then(|v| v.as_f64())
-        .expect("overlay stretch should exist");
-
-    assert_eq!(overlay_stretch, 0.0);
-}
-
-#[test]
-fn test_abandoned_pchk_all_268_values_count() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    // 全268値が正しく読み取られていることを確認
-    assert_eq!(nksf.plugin_chunk.values.len(), 268);
-
-    // 各値の型が期待通りであることを確認
-    // インデックス0-267の全値が有効なJSON値であること
-    for (i, value) in nksf.plugin_chunk.values.iter().enumerate() {
-        assert!(
-            value.is_string() || value.is_number() || value.is_object() || value.is_array() || value.is_boolean() || value.is_null(),
-            "Value at index {} should be valid JSON value", i
-        );
-    }
-}
-
-// ========================================
-// 完全なデータ検証テスト（全3825エントリ）
-// ========================================
-
-#[test]
-fn test_abandoned_pchk_strings_all_entries() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_STRINGS;
-    let actual_map = nksf.plugin_chunk.values[2]
-        .as_object()
-        .expect("strings should be object");
-
-    // 全758エントリの完全検証
-    assert_eq!(actual_map.len(), expected.len());
-
-    for (key, expected_value) in expected.entries() {
+    for (key, expected_value) in expected_map.entries() {
         let actual_value = actual_map
             .get(*key)
             .and_then(|v| v.as_str())
@@ -514,24 +394,35 @@ fn test_abandoned_pchk_strings_all_entries() {
     }
 
     for key in actual_map.keys() {
-        assert!(expected.contains_key(key), "Unexpected key: {}", key);
+        assert!(expected_map.contains_key(key), "Unexpected key: {}", key);
     }
 }
 
 #[test]
-fn test_abandoned_pchk_doubles_all_entries() {
+fn test_abandoned_pchk_floats_value() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_DOUBLES;
-    let actual_map = nksf.plugin_chunk.values[8]
-        .as_object()
-        .expect("doubles should be object");
+    let floats_map = nksf.plugin_chunk.values[5].as_object().unwrap();
+    let actual_val = floats_map
+        .get("root/engine/unit1/Performers/performers/grid/overlay stretch")
+        .and_then(|v| v.as_f64())
+        .expect("overlay stretch should exist");
 
-    // 全1104エントリの完全検証
-    assert_eq!(actual_map.len(), expected.len());
+    assert_eq!(actual_val, expected::EXPECTED_FLOATS_OVERLAY_STRETCH);
+}
 
-    for (key, expected_value) in expected.entries() {
+#[test]
+fn test_abandoned_pchk_doubles_all() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+
+    let expected_map = &expected::EXPECTED_ABANDONED_DOUBLES;
+    let actual_map = nksf.plugin_chunk.values[8].as_object().unwrap();
+
+    assert_eq!(actual_map.len(), expected_map.len());
+
+    for (key, expected_value) in expected_map.entries() {
         let actual_value = actual_map
             .get(*key)
             .and_then(|v| v.as_f64())
@@ -545,7 +436,7 @@ fn test_abandoned_pchk_doubles_all_entries() {
 
     for key in actual_map.keys() {
         assert!(
-            expected.contains_key(key.as_str()),
+            expected_map.contains_key(key.as_str()),
             "Unexpected key: {}",
             key
         );
@@ -553,19 +444,16 @@ fn test_abandoned_pchk_doubles_all_entries() {
 }
 
 #[test]
-fn test_abandoned_pchk_ints_all_entries() {
+fn test_abandoned_pchk_ints_all() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_INTS;
-    let actual_map = nksf.plugin_chunk.values[11]
-        .as_object()
-        .expect("ints should be object");
+    let expected_map = &expected::EXPECTED_ABANDONED_INTS;
+    let actual_map = nksf.plugin_chunk.values[11].as_object().unwrap();
 
-    // 全383エントリの完全検証
-    assert_eq!(actual_map.len(), expected.len());
+    assert_eq!(actual_map.len(), expected_map.len());
 
-    for (key, expected_value) in expected.entries() {
+    for (key, expected_value) in expected_map.entries() {
         let actual_value = actual_map
             .get(*key)
             .and_then(|v| v.as_i64())
@@ -575,7 +463,7 @@ fn test_abandoned_pchk_ints_all_entries() {
 
     for key in actual_map.keys() {
         assert!(
-            expected.contains_key(key.as_str()),
+            expected_map.contains_key(key.as_str()),
             "Unexpected key: {}",
             key
         );
@@ -583,19 +471,16 @@ fn test_abandoned_pchk_ints_all_entries() {
 }
 
 #[test]
-fn test_abandoned_pchk_bools_all_entries() {
+fn test_abandoned_pchk_bools_all() {
     let path = get_fixture_path();
     let nksf = parse_nksf(&path).expect("Failed to parse");
 
-    let expected = &super::abandoned_expected_data::EXPECTED_ABANDONED_BOOLS;
-    let actual_map = nksf.plugin_chunk.values[14]
-        .as_object()
-        .expect("bools should be object");
+    let expected_map = &expected::EXPECTED_ABANDONED_BOOLS;
+    let actual_map = nksf.plugin_chunk.values[14].as_object().unwrap();
 
-    // 全1580エントリの完全検証
-    assert_eq!(actual_map.len(), expected.len());
+    assert_eq!(actual_map.len(), expected_map.len());
 
-    for (key, expected_value) in expected.entries() {
+    for (key, expected_value) in expected_map.entries() {
         let actual_value = actual_map
             .get(*key)
             .and_then(|v| v.as_bool())
@@ -605,7 +490,7 @@ fn test_abandoned_pchk_bools_all_entries() {
 
     for key in actual_map.keys() {
         assert!(
-            expected.contains_key(key.as_str()),
+            expected_map.contains_key(key.as_str()),
             "Unexpected key: {}",
             key
         );

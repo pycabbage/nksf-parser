@@ -1,6 +1,10 @@
 use crate::error::{ParseError, Result};
 use std::io::{Read, Seek, SeekFrom};
 
+/// チャンクサイズの最大値（100MB）
+/// メモリ枯渇攻撃を防ぐため
+const MAX_CHUNK_SIZE: u32 = 100 * 1024 * 1024;
+
 /// RIFFチャンク情報
 #[derive(Debug, Clone)]
 pub struct RiffChunk {
@@ -24,7 +28,6 @@ impl<R: Read + Seek> RiffReader<R> {
     ///
     /// RIFFヘッダーと"NIKS"フォーマット識別子を検証します。
     pub fn new(mut reader: R) -> Result<Self> {
-        // RIFFヘッダーの読み取り
         let mut riff_header = [0u8; 4];
         reader.read_exact(&mut riff_header)?;
 
@@ -32,12 +35,12 @@ impl<R: Read + Seek> RiffReader<R> {
             return Err(ParseError::InvalidRiff);
         }
 
-        // ファイルサイズの読み取り（リトルエンディアン）
         let mut size_bytes = [0u8; 4];
         reader.read_exact(&mut size_bytes)?;
-        let file_size = u32::from_le_bytes(size_bytes) as u64 + 8; // +8 for RIFF header
+        // RIFFファイルサイズ = RIFFヘッダー(8バイト) + ペイロードサイズ
+        let riff_payload_size = u32::from_le_bytes(size_bytes) as u64;
+        let file_size = riff_payload_size + 8; // RIFF(4) + size(4)
 
-        // フォーマット識別子の読み取り
         let mut format_id = [0u8; 4];
         reader.read_exact(&mut format_id)?;
 
@@ -56,12 +59,10 @@ impl<R: Read + Seek> RiffReader<R> {
     ///
     /// ファイルの終端に達した場合は`None`を返します。
     pub fn next_chunk(&mut self) -> Result<Option<RiffChunk>> {
-        // ファイルの終端チェック
         if self.bytes_read >= self.file_size {
             return Ok(None);
         }
 
-        // チャンクIDの読み取り
         let mut chunk_id = [0u8; 4];
         match self.reader.read_exact(&mut chunk_id) {
             Ok(_) => {}
@@ -71,14 +72,11 @@ impl<R: Read + Seek> RiffReader<R> {
             Err(e) => return Err(e.into()),
         }
 
-        // チャンクサイズの読み取り（リトルエンディアン）
         let mut size_bytes = [0u8; 4];
         self.reader.read_exact(&mut size_bytes)?;
         let chunk_size = u32::from_le_bytes(size_bytes);
 
         let data_offset = self.bytes_read + 8; // +8 for chunk ID and size
-
-        // bytes_readを更新（チャンクヘッダー分）
         self.bytes_read += 8;
 
         Ok(Some(RiffChunk {
@@ -93,17 +91,22 @@ impl<R: Read + Seek> RiffReader<R> {
     /// チャンクの位置にシークし、データを読み取ります。
     /// 奇数バイトのチャンクの場合、パディングをスキップします。
     pub fn read_chunk_data(&mut self, chunk: &RiffChunk) -> Result<Vec<u8>> {
-        // チャンクデータの位置にシーク
+        // 不正なファイルで巨大なチャンクサイズ（例: 4GB）を指定された場合、
+        // メモリを大量に確保しようとしてシステムがクラッシュする可能性がある。
+        // 通常のNKSFファイルのチャンクは数十MB以下なので、100MBを上限とする。
+        if chunk.size > MAX_CHUNK_SIZE {
+            return Err(ParseError::InvalidNiks);
+        }
+
         self.reader.seek(SeekFrom::Start(chunk.data_offset))?;
 
-        // データの読み取り
         let mut data = vec![0u8; chunk.size as usize];
         self.reader.read_exact(&mut data)?;
 
-        // bytes_readを更新（データサイズ分）
         self.bytes_read += chunk.size as u64;
 
-        // 奇数バイトの場合、パディングをスキップ
+        // RIFFフォーマットでは、奇数バイトのチャンクには1バイトのパディングが追加される
+        // これをスキップしないと、次のチャンクの読み取り位置がずれる
         if chunk.size % 2 == 1 {
             let mut padding = [0u8; 1];
             if self.reader.read_exact(&mut padding).is_ok() {

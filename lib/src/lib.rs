@@ -27,6 +27,7 @@
 
 // モジュール宣言
 mod error;
+mod msgpack_utils;
 mod nica_parser;
 mod nisi_parser;
 mod parser;

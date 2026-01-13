@@ -1,4 +1,5 @@
-use crate::error::{ParseError, Result};
+use crate::error::Result;
+use crate::msgpack_utils::parse_versioned_msgpack;
 use crate::types::NisiMetadata;
 
 /// NISIチャンクデータを解析
@@ -13,27 +14,13 @@ use crate::types::NisiMetadata;
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
 /// * `MessagePackError` - MessagePackデシリアライズエラー
 pub fn parse_nisi_chunk(data: &[u8]) -> Result<NisiMetadata> {
-    // バージョンの読み取り（最初の4バイト、リトルエンディアン）
-    if data.len() < 4 {
-        return Err(ParseError::InvalidNiks);
-    }
-
-    let version = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
-
-    // バージョン1のみサポート
-    if version != 1 {
-        return Err(ParseError::InvalidNiks);
-    }
-
-    // MessagePackデータのデシリアライズ
-    let metadata: NisiMetadata = rmp_serde::from_slice(&data[4..])?;
-
-    Ok(metadata)
+    parse_versioned_msgpack(data)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::ParseError;
 
     #[test]
     fn test_parse_nisi_chunk_too_short() {

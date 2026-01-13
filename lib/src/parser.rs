@@ -77,7 +77,6 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
     let mut plugin_id: Option<PlidData> = None;
     let mut plugin_chunk: Option<PchkData> = None;
 
-    // 全チャンクを処理
     while let Some(chunk) = riff_reader.next_chunk()? {
         let chunk_id = std::str::from_utf8(&chunk.id).unwrap_or("????");
         let data = riff_reader.read_chunk_data(&chunk)?;
@@ -96,16 +95,16 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
                 plugin_chunk = Some(parse_pchk_chunk(&data)?);
             }
             _ => {
-                // 未知のチャンクが見つかった場合はエラー
+                // NKSFファイルは4つのチャンク（NISI, NICA, PLID, PCHK）のみを含む
+                // 他のチャンクが見つかった場合は不正なファイル
                 return Err(ParseError::UnknownChunk(chunk_id.to_string()));
             }
         }
     }
 
-    // 全バイトが読み取られたことを検証
     riff_reader.verify_complete()?;
 
-    // 必須チャンクの確認
+    // 4つの必須チャンクがすべて存在することを確認
     let metadata = metadata.ok_or(ParseError::InvalidNiks)?;
     let parameters = parameters.ok_or(ParseError::InvalidNiks)?;
     let plugin_id = plugin_id.ok_or(ParseError::InvalidNiks)?;
