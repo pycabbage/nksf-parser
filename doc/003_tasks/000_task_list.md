@@ -64,11 +64,29 @@ Status: Completed
 
 PLIDチャンク（Plugin ID）のMessagePackデータを完全に解析し、構造化する。
 
-Status: In Progress
+Status: Completed
 
 ### 009-002: PCHKチャンクの完全解析
 
 PCHKチャンク（Plugin Chunk）のバイナリフォーマットを完全に解析し、構造化する。
+
+Status: Completed
+
+### 009-003: PLIDパーサーの実装
+
+PLIDチャンクパーサーを実装し、メインパーサーに統合する。
+
+Status: Planned
+
+### 009-004: PCHKパーサーの実装
+
+PCHKチャンクパーサー（zlib展開 + MessagePackストリーム）を実装する。
+
+Status: Planned
+
+### 009-005: NksfFile構造の更新とテスト
+
+NksfFile構造体を更新し、unknown_chunksからPLID/PCHKを削除、テストを更新する。
 
 Status: Planned
 
@@ -126,7 +144,7 @@ Status: Planned
 
 1. 001 → 002 → 003 → 004 (Phase 1)
 2. 005 → 006 (Phase 2)
-3. 007 → 008 → 009 → **009-001 → 009-002** (Phase 3)
+3. 007 → 008 → 009 → 009-001 → 009-002 → **009-003 → 009-004 → 009-005** (Phase 3)
 4. 011 → 010 (Phase 4)
 5. 012 → 013 (Phase 5)
 6. 014 → 015 → 016 (Phase 6)
