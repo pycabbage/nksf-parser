@@ -60,6 +60,18 @@ Status: Completed
 
 Status: Completed
 
+### 009-001: PLIDチャンクの完全解析
+
+PLIDチャンク（Plugin ID）のMessagePackデータを完全に解析し、構造化する。
+
+Status: Planned
+
+### 009-002: PCHKチャンクの完全解析
+
+PCHKチャンク（Plugin Chunk）のバイナリフォーマットを完全に解析し、構造化する。
+
+Status: Planned
+
 ## Phase 4: CLIツールの実装
 
 ### 010: CLIツールの実装
@@ -114,7 +126,7 @@ Status: Planned
 
 1. 001 → 002 → 003 → 004 (Phase 1)
 2. 005 → 006 (Phase 2)
-3. 007 → 008 → 009 (Phase 3)
+3. 007 → 008 → 009 → **009-001 → 009-002** (Phase 3)
 4. 011 → 010 (Phase 4)
 5. 012 → 013 (Phase 5)
 6. 014 → 015 → 016 (Phase 6)
