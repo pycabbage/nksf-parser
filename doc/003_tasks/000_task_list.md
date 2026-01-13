@@ -64,7 +64,7 @@ Status: Completed
 
 PLIDチャンク（Plugin ID）のMessagePackデータを完全に解析し、構造化する。
 
-Status: Planned
+Status: In Progress
 
 ### 009-002: PCHKチャンクの完全解析
 
