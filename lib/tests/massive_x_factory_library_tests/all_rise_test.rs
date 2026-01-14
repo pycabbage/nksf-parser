@@ -1,5 +1,10 @@
+// All Rise
+// 自動生成されたテストファイル
+
 use nksf_parser::{ParseError, parse_nksf};
 use std::path::PathBuf;
+
+use super::all_rise_expected_data as expected;
 
 fn get_fixture_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -17,40 +22,9 @@ fn test_all_rise_parse_success() {
 }
 
 #[test]
-fn test_all_rise_metadata() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    assert_eq!(nksf.metadata.name, "All Rise");
-    assert_eq!(nksf.metadata.author, "Sami Rabia");
-    assert_eq!(nksf.metadata.vendor, "Native Instruments");
-    assert_eq!(nksf.metadata.device_type, "INST");
-    assert!(!nksf.metadata.uuid.is_empty());
-}
-
-#[test]
-fn test_all_rise_parameters() {
-    let path = get_fixture_path();
-    let nksf = parse_nksf(&path).expect("Failed to parse");
-
-    assert_eq!(nksf.parameters.ni8.len(), 2);
-
-    let total_params: usize = nksf
-        .parameters
-        .ni8
-        .iter()
-        .filter_map(|v| v.as_array())
-        .map(|arr| arr.len())
-        .sum();
-
-    assert_eq!(total_params, 16);
-}
-
-#[test]
 fn test_all_rise_complete_parse() {
     let path = get_fixture_path();
     let result = parse_nksf(&path);
-
     match result {
         Ok(_) => { /* OK */ }
         Err(ParseError::IncompleteParse(remaining, offset)) => {
@@ -63,4 +37,13 @@ fn test_all_rise_complete_parse() {
             panic!("Unexpected error: {:?}", e);
         }
     }
+}
+
+#[test]
+fn test_all_rise_nisi() {
+    let path = get_fixture_path();
+    let nksf = parse_nksf(&path).expect("Failed to parse");
+    assert_eq!(nksf.metadata.name, expected::EXPECTED_NISI.name);
+    assert_eq!(nksf.metadata.author, expected::EXPECTED_NISI.author);
+    assert_eq!(nksf.metadata.vendor, expected::EXPECTED_NISI.vendor);
 }

@@ -1,50 +1,7 @@
 mod massive_x_factory_library_tests;
 
-use nksf_parser::{ParseError, parse_nksf, parse_nksf_from_bytes};
+use nksf_parser::{ParseError, parse_nksf_from_bytes};
 use std::path::PathBuf;
-
-// =====================================
-// 複数ファイルの連続解析テスト
-// =====================================
-
-#[test]
-fn test_parse_all_fixture_files() {
-    let fixture_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("massive_x_factory_library_tests")
-        .join("fixture");
-
-    let mut success_count = 0;
-    let mut failure_count = 0;
-    let mut failed_files = Vec::new();
-
-    for entry in std::fs::read_dir(&fixture_dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-
-        if path.extension().and_then(|s| s.to_str()) == Some("nksf") {
-            match parse_nksf(&path) {
-                Ok(_) => success_count += 1,
-                Err(e) => {
-                    eprintln!("Failed to parse {:?}: {}", path.file_name().unwrap(), e);
-                    failed_files.push(path.file_name().unwrap().to_string_lossy().to_string());
-                    failure_count += 1;
-                }
-            }
-        }
-    }
-
-    println!(
-        "Parsed {} files successfully, {} failures",
-        success_count, failure_count
-    );
-
-    if !failed_files.is_empty() {
-        eprintln!("Failed files: {:?}", failed_files);
-    }
-
-    assert_eq!(failure_count, 0, "All files should parse successfully");
-}
 
 // =====================================
 // エラーケースのテスト
@@ -68,7 +25,7 @@ fn test_incomplete_file() {
 #[test]
 fn test_nonexistent_file() {
     let path = PathBuf::from("/nonexistent/file.nksf");
-    let result = parse_nksf(&path);
+    let result = nksf_parser::parse_nksf(&path);
     assert!(matches!(result, Err(ParseError::IoError(_))));
 }
 
@@ -118,7 +75,7 @@ fn test_parse_performance() {
 
         if path.extension().and_then(|s| s.to_str()) == Some("nksf") {
             let start = Instant::now();
-            let _ = parse_nksf(&path).expect("Parse failed");
+            let _ = nksf_parser::parse_nksf(&path).expect("Parse failed");
             total_time += start.elapsed();
             file_count += 1;
         }

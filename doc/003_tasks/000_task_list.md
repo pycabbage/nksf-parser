@@ -144,7 +144,7 @@ Status: Completed
 
 テスト用固定値とテスト実行コードを完全に分離し、全720プリセットに対する詳細テストを実現する。
 
-Status: Planned
+Status: Completed
 
 ---
 
