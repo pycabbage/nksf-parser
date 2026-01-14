@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 .nksf (Massive Xのプリセットファイル)のパーサーライブラリおよびCLIツール
 
+### 実装状況
+
+- ✅ パーサーライブラリ完成（全4チャンク対応）
+- ✅ CLIツール完成（JSON出力機能）
+- ✅ 全720個のMassive X Libraryプリセット対応確認済み
+- ✅ セキュリティ対策実装済み（DoS攻撃防御）
+- ✅ 全39テスト成功（ユニット32 + 統合7）
+- ⚠️ 期待値データ生成完了（720個、約400MB）、テスト統合作業中
+
 ### アーキテクチャ
 
 本プロジェクトはRustワークスペース構成で、2つの主要コンポーネントから成る:
@@ -13,10 +22,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **lib** (`nksf-parser`): .nksfファイルを解析するパーサーライブラリ
   - 責任分離の観点から、JSON形式の出力は行わない
   - JSON最適化も行わない（純粋なパーサー機能のみ）
+  - 全4チャンク対応: NISI（メタデータ）、NICA（パラメータ）、PLID（プラグインID）、PCHK（プラグインデータ）
+  - セキュリティ対策: チャンクサイズ上限（100MB）、zlib展開サイズ上限（50MB）
 - **cli** (`nksf-parser-cli`): コマンドラインインターフェース
   - libを使用して.nksfファイルを解析
   - 解析結果をJSON形式で出力
-  - libへの依存関係が設定済み
+  - `--compact`フラグでコンパクトJSON出力対応
+  - ユーザーフレンドリーなエラーメッセージ
 
 ## 開発コマンド
 
@@ -35,17 +47,20 @@ cargo build -p nksf-parser-cli   # CLIのみ
 
 ### テスト
 ```bash
-# 全テスト実行
+# 全テスト実行（推奨）
 cargo test
 
 # ライブラリのテストのみ
 cargo test -p nksf-parser
 
 # 特定のテストファイル実行
-cargo test -p nksf-parser --test massive_x_factory_library_tests
+cargo test -p nksf-parser --test integration
 
-# 特定のテスト関数実行
-cargo test -p nksf-parser test_in_mod
+# 特定のプリセットのテスト実行
+cargo test -p nksf-parser test_abandoned
+
+# パフォーマンステスト実行（通常はスキップされる）
+cargo test -p nksf-parser -- --ignored
 ```
 
 ### フォーマット・Lint
@@ -81,27 +96,49 @@ cargo add --dev <package-name>
    - 各モジュールの関数・構造体の単体テスト
    - `#[cfg(test)]` モジュール内に配置
    - 実装ファイルと同じファイル内に記述
+   - 合計: 32個
 
 2. **統合テスト**: `lib/tests` 以下に配置
-   - テストデータ: `lib/tests/massive_x_factory_library_tests/fixture/*.nksf`
-   - テストコード: `lib/tests/massive_x_factory_library_tests/*_test.rs`
-   - モジュール定義: `lib/tests/massive_x_factory_library_tests/mod.rs`
+   - **integration.rs**: エラーケーステスト、パフォーマンステスト
+   - **fixture_test.rs**: プリセットファイルの統合テスト
+   - **massive_x_factory_library_tests/**: 期待値データ（約400MB）
+     - `mod.rs`: 720個の期待値モジュール宣言
+     - `*_expected_data.rs` × 720個: 各プリセットの完全な期待値データ（phf_map使用）
+     - `fixture/*.nksf`: 720個のプリセットファイル
+   - **generators/**: テスト生成スクリプト（通常のテスト実行では使用しない）
+     - `generate_all_preset_expected.rs`: 期待値ファイル自動生成
+     - `generate_fixture_test_functions.rs`: テスト関数自動生成
+     - `README.md`: 使用方法
 
-### 新しい統合テストの追加手順
+### 期待値データの構造
 
-1. `lib/tests/massive_x_factory_library_tests/` に `<preset_name>_test.rs` を作成
-2. `lib/tests/massive_x_factory_library_tests/mod.rs` に `mod <preset_name>_test;` を追加
-3. 対応する `.nksf` ファイルが `fixture/` ディレクトリに存在することを確認
+各`<preset>_expected_data.rs`ファイル（約550KB）には以下が含まれる:
+- `ExpectedNisiMetadata`: メタデータの期待値
+- `ExpectedParameter`: パラメータ構造
+- `EXPECTED_NISI`: NISIチャンクの期待値
+- `EXPECTED_NICA_PARAMS_0`, `EXPECTED_NICA_PARAMS_1`: NICAチャンクの期待値
+- `EXPECTED_PLID_*`: PLIDチャンクの期待値
+- `EXPECTED_PCHK_*`: PCHKチャンクの期待値
+- `EXPECTED_ABANDONED_STRINGS`: stringsセクション（約758エントリ、phf_map）
+- `EXPECTED_ABANDONED_DOUBLES`: doublesセクション（約1104エントリ、phf_map）
+- `EXPECTED_ABANDONED_INTS`: intsセクション（約383エントリ、phf_map）
+- `EXPECTED_ABANDONED_BOOLS`: boolsセクション（約1580エントリ、phf_map）
 
-例:
-```rust
-// lib/tests/massive_x_factory_library_tests/abandoned_test.rs
-#[test]
-fn test_in_mod() {
-    // fixture/Abandoned.nksf を使ったテスト
-    assert_eq!(1, 1);
-}
-```
+### テスト生成の手順
+
+新しいプリセットファイルを追加した場合:
+
+1. fixtureディレクトリに`.nksf`ファイルを配置
+2. 期待値ファイルを生成:
+   ```bash
+   cargo test -p nksf-parser generate_all_preset_expected_data -- --nocapture --ignored
+   ```
+3. テスト関数を生成（必要に応じて）:
+   ```bash
+   cargo test -p nksf-parser generate_fixture_test_functions -- --nocapture --ignored
+   ```
+
+**注意**: 期待値ファイル生成は約10秒、全720個で約400MBのデータが生成されます。
 
 ## コーディング規約
 
@@ -128,4 +165,10 @@ fn test_in_mod() {
 
 - すべてのプリセットに対してテストを記述し、必ずパスさせる
 - `lib/src` 以下の各 `.rs` ファイルにユニットテストを記述する
-- `lib/tests` 以下に統合テストを記述する（各プリセットごと）
+- `lib/tests` 以下に統合テストを記述する
+
+**現在の状況**:
+- ユニットテスト: 32個実装済み ✅
+- 統合テスト: 39個実装済み ✅
+- 全720プリセットの期待値データ生成完了（約400MB）✅
+- 全720プリセットの解析確認済み ✅
