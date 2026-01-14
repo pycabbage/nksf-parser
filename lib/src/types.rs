@@ -1,6 +1,24 @@
 use serde::{Deserialize, Serialize};
 
 /// .nksfファイルの完全な解析結果
+///
+/// NKSFファイルは4つのチャンクから構成されます:
+/// - NISI: メタデータ（プリセット名、作者、タグ等）
+/// - NICA: パラメータアサインメント（マクロコントロールの割り当て）
+/// - PLID: プラグインID（VSTマジックナンバー等）
+/// - PCHK: プラグインチャンク（Massive Xの全パラメータ値、zlib圧縮されたMessagePackデータ）
+///
+/// # Examples
+///
+/// ```no_run
+/// use nksf_parser::parse_nksf;
+/// use std::path::Path;
+///
+/// let nksf = parse_nksf(Path::new("preset.nksf"))?;
+/// println!("Preset: {}", nksf.metadata.name);
+/// println!("Author: {}", nksf.metadata.author);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NksfFile {
     /// メタデータ（NISIチャンク）
@@ -30,7 +48,8 @@ pub struct NisiMetadata {
     /// デバイスタイプ
     #[serde(rename = "deviceType")]
     pub device_type: String,
-    /// モード
+    /// モード（一部のプリセットには存在しない）
+    #[serde(default)]
     pub modes: Vec<String>,
     /// プリセット名
     pub name: String,
@@ -97,7 +116,8 @@ pub struct PchkHeader {
 /// NICAチャンクのパラメータデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NicaData {
-    /// パラメータリストと追加データ
+    /// パラメータリストと追加データ（一部のプリセットには存在しない）
+    #[serde(default)]
     pub ni8: Vec<serde_json::Value>,
 }
 

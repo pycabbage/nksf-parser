@@ -96,13 +96,13 @@ Status: Completed
 
 cliクレートに必要な依存関係を追加する。
 
-Status: Planned
+Status: Completed
 
 ### 011: CLIツールの実装
 
 コマンドライン引数処理とJSON出力を実装する (cli/src/main.rs)。
 
-Status: Planned
+Status: Completed
 
 ## Phase 5: エラーハンドリングと改善
 
@@ -111,14 +111,14 @@ Status: Planned
 フィールドレベルのバリデーションを追加する。
 ※ 基本的なバリデーション（フォーマット検証、バージョンチェック、セキュリティ対策）は実装済み。
 
-Status: Planned
+Status: Completed
 
 ### 013: エラーハンドリングの改善（更新版）
 
 CLIツールでのユーザーフレンドリーなエラーメッセージを実装する。
 ※ libクレートのエラーハンドリングは実装済み。タスク011に依存。
 
-Status: Planned
+Status: Completed
 
 ## Phase 6: テストとドキュメント
 
@@ -126,17 +126,23 @@ Status: Planned
 
 fixture/ディレクトリ内の全.nksfファイルに対する統合テストを作成する。
 
-Status: Planned
+Status: Completed
 
 ### 015: 統合テストの拡充
 
 integration.rsに複数ファイル処理やエラーケースのテストを追加する。
 
-Status: Planned
+Status: Completed
 
 ### 016: ドキュメントコメントの追加
 
 パブリックAPIに対するRustdocコメントを追加する。
+
+Status: Completed
+
+### 017: テストアーキテクチャの再設計
+
+テスト用固定値とテスト実行コードを完全に分離し、全720プリセットに対する詳細テストを実現する。
 
 Status: Planned
 
@@ -149,7 +155,7 @@ Status: Planned
 3. 007 → 008 → 009 → 009-001 → 009-002 → 009-003 → 009-004 → 009-005 (Phase 3)
 4. 010 → 011 (Phase 4)
 5. 012 → 013 (Phase 5)
-6. 014 → 015 → 016 (Phase 6)
+6. 014 → 015 → 016 → **017** (Phase 6)
 
 ## 品質基準
 

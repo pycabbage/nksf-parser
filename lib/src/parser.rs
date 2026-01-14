@@ -68,6 +68,43 @@ pub fn parse_nksf_from_bytes(data: &[u8]) -> Result<NksfFile> {
     parse_nksf_from_reader(cursor)
 }
 
+/// NISIメタデータの必須フィールドを検証
+///
+/// 必須フィールドが空でないことを確認する
+fn validate_nisi_metadata(metadata: &NisiMetadata) -> Result<()> {
+    if metadata.name.is_empty() {
+        return Err(ParseError::InvalidNiks);
+    }
+    if metadata.vendor.is_empty() {
+        return Err(ParseError::InvalidNiks);
+    }
+    if metadata.device_type.is_empty() {
+        return Err(ParseError::InvalidNiks);
+    }
+    Ok(())
+}
+
+/// NICAパラメータのID重複を検証
+///
+/// 同じパラメータIDが複数回使用されていないことを確認する
+fn validate_nica_parameters(parameters: &NicaData) -> Result<()> {
+    use std::collections::HashSet;
+
+    for array in &parameters.ni8 {
+        if let Some(params) = array.as_array() {
+            let mut ids = HashSet::new();
+            for param in params {
+                if let Some(id) = param.get("id").and_then(|v| v.as_u64())
+                    && !ids.insert(id)
+                {
+                    return Err(ParseError::InvalidNiks);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// 内部ヘルパー関数: Readerから.nksfファイルを解析
 fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
     let mut riff_reader = RiffReader::new(reader)?;
@@ -110,6 +147,10 @@ fn parse_nksf_from_reader<R: Read + Seek>(reader: R) -> Result<NksfFile> {
     let plugin_id = plugin_id.ok_or(ParseError::InvalidNiks)?;
     let plugin_chunk = plugin_chunk.ok_or(ParseError::InvalidNiks)?;
 
+    // フィールドレベルのバリデーション
+    validate_nisi_metadata(&metadata)?;
+    validate_nica_parameters(&parameters)?;
+
     Ok(NksfFile {
         metadata,
         parameters,
@@ -135,6 +176,60 @@ mod tests {
         let data = b"RIFF\x04\x00\x00\x00NIKS";
         let result = parse_nksf_from_bytes(data);
         // 必須チャンクが欠けている
+        assert!(matches!(result, Err(ParseError::InvalidNiks)));
+    }
+
+    #[test]
+    fn test_validate_nisi_empty_name() {
+        let metadata = NisiMetadata {
+            ni_internal: serde_json::Value::String("BRIB".to_string()),
+            author: "Test".to_string(),
+            bankchain: vec![],
+            characters: vec![],
+            comment: "Test".to_string(),
+            device_type: "INST".to_string(),
+            modes: vec![],
+            name: "".to_string(), // 空の名前
+            types: vec![],
+            uuid: "test".to_string(),
+            vendor: "Test".to_string(),
+        };
+
+        let result = validate_nisi_metadata(&metadata);
+        assert!(matches!(result, Err(ParseError::InvalidNiks)));
+    }
+
+    #[test]
+    fn test_validate_nisi_empty_vendor() {
+        let metadata = NisiMetadata {
+            ni_internal: serde_json::Value::String("BRIB".to_string()),
+            author: "Test".to_string(),
+            bankchain: vec![],
+            characters: vec![],
+            comment: "Test".to_string(),
+            device_type: "INST".to_string(),
+            modes: vec![],
+            name: "Test".to_string(),
+            types: vec![],
+            uuid: "test".to_string(),
+            vendor: "".to_string(), // 空のベンダー
+        };
+
+        let result = validate_nisi_metadata(&metadata);
+        assert!(matches!(result, Err(ParseError::InvalidNiks)));
+    }
+
+    #[test]
+    fn test_validate_nica_duplicate_id() {
+        // パラメータIDが重複しているNicaDataを作成
+        let nica_data = NicaData {
+            ni8: vec![serde_json::json!([
+                {"id": 0, "name": "Param 0", "autoname": true, "vflag": false},
+                {"id": 0, "name": "Param 0 Duplicate", "autoname": true, "vflag": false}, // 重複ID
+            ])],
+        };
+
+        let result = validate_nica_parameters(&nica_data);
         assert!(matches!(result, Err(ParseError::InvalidNiks)));
     }
 }
