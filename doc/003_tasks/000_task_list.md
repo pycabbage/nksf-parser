@@ -146,6 +146,17 @@ Status: Completed
 
 Status: Completed
 
+## Phase 7: テストツールの強化
+
+### 018: テストライブラリの導入
+
+テストの表現力、実行速度、保守性を向上させるため、Rustエコシステムの標準的なテストライブラリを導入する。
+
+- 必須級: rstest, cargo-nextest, insta, pretty_assertions
+- 強く推奨: proptest, criterion
+
+Status: Not Started
+
 ---
 
 ## 実装順序
@@ -155,7 +166,8 @@ Status: Completed
 3. 007 → 008 → 009 → 009-001 → 009-002 → 009-003 → 009-004 → 009-005 (Phase 3)
 4. 010 → 011 (Phase 4)
 5. 012 → 013 (Phase 5)
-6. 014 → 015 → 016 → **017** (Phase 6)
+6. 014 → 015 → 016 → 017 (Phase 6)
+7. **018** (Phase 7)
 
 ## 品質基準
 
