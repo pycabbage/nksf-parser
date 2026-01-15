@@ -40,7 +40,11 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: nextest
-
+      
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+      - name: Run Clippy
+        run: cargo clippy
       - name: Download and validate test fixtures
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -121,9 +125,9 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: [build]
-    # デバッグ用
-    if: ${{ github.event_name == 'push' }}
-    # if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -131,13 +135,10 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: ./artifacts
-      - name: Debug
-        run: |
-          ls -lhR ./artifacts
 
-      # - name: Create GitHub Release
-      #   uses: softprops/action-gh-release@v2
-      #   if: github.ref_type == 'tag'
-      #   with:
-      #     generate_release_notes: true
-      #     files: ./artifacts/**
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          generate_release_notes: true
+          files: ./artifacts/**
