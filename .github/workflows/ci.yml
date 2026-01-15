@@ -130,7 +130,6 @@ jobs:
       - name: Download all build artifacts
         uses: actions/download-artifact@v7
         with:
-          name: nksf-parser-cli-*
           path: ./artifacts
       - name: Debug
         run: |
