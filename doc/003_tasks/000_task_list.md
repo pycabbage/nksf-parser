@@ -157,6 +157,17 @@ Status: Completed
 
 Status: Completed
 
+## Phase 8: CLI機能の拡充
+
+### 019: CLI機能拡充
+
+CLIツールのコマンドラインオプションを拡充し、複数ファイルの処理、出力先の指定、上書き動作の制御を実装する。
+
+- 追加オプション: `-o,--output`, `-d,--dir`, `-v,--version`, `--overwrite`
+- 複数ファイル入力対応
+
+Status: Not Started
+
 ---
 
 ## 実装順序
@@ -167,7 +178,8 @@ Status: Completed
 4. 010 → 011 (Phase 4)
 5. 012 → 013 (Phase 5)
 6. 014 → 015 → 016 → 017 (Phase 6)
-7. **018** (Phase 7)
+7. 018 (Phase 7)
+8. **019** (Phase 8)
 
 ## 品質基準
 
