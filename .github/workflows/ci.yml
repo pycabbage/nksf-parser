@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws-region: auto
+
+      - name: Download and validate test fixtures
+        run: |
+          # Download archive
+          aws s3 cp \
+            s3://nksf-parser-fixtures/massive_x_factory_library_tests_fixtures.7z /tmp \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+          echo c4c0e2d5aecdb7a8d27bb6864e52bf87a06021f74bfcaa870654ba567fd3fe63  /tmp/massive_x_factory_library_tests_fixtures.7z | sha256sum -c
+
+          # Extract archive
+          (
+            cd lib/tests
+            7z x -omassive_x_factory_library_tests/fixture /tmp/massive_x_factory_library_tests_fixtures.7z
+            sha256sum -c checksum.sha256 --quiet
+          )
+
+          # Remove archive
+          rm /tmp/massive_x_factory_library_tests_fixtures.7z
+
+      - name: Run tests
+        run: |
+          cargo nextest run
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            filename: nksf-parser-cli
+          - target: aarch64-unknown-linux-gnu
+            depends: crossbuild-essential-arm64
+            filename: nksf-parser-cli
+          - target: x86_64-pc-windows-gnu
+            depends: mingw-w64
+            filename: nksf-parser-cli.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup rust environment
+        run: rustup target add "${{ matrix.target }}"
+
+      - name: Install dependencies (${{ matrix.target }})
+        if: ${{ matrix.depends != '' }}
+        run: |
+          sudo apt update
+          sudo apt install -y ${{ matrix.depends }}
+
+      - name: Build CLI
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          cargo build -p nksf-parser-cli --release --target "${{ matrix.target }}"
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: nksf-parser-cli-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.filename }}

@@ -21,7 +21,6 @@ pretty_assertions = "1.4.1"
 proptest = "1.9.0"
 rstest = "0.26.1"
 
-# Criterionベンチマーク設定
 [[bench]]
 name = "parser_bench"
 harness = false
