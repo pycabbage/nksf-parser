@@ -83,10 +83,11 @@ pub fn parse_pchk_chunk(data: &[u8]) -> Result<PchkData> {
 
     // 全バイトが消費されたことを確認
     if cursor.position() != decompressed.len() as u64 {
-        return Err(ParseError::IncompleteParse(
-            (decompressed.len() as u64 - cursor.position()) as usize,
-            cursor.position() as usize,
-        ));
+        let position =
+            usize::try_from(cursor.position()).expect("File size exceeds platform limits (32-bit)");
+        let remaining = usize::try_from(decompressed.len() as u64 - cursor.position())
+            .expect("File size exceeds platform limits (32-bit)");
+        return Err(ParseError::IncompleteParse(remaining, position));
     }
 
     Ok(PchkData { header, values })

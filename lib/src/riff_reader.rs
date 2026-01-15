@@ -100,7 +100,9 @@ impl<R: Read + Seek> RiffReader<R> {
 
         self.reader.seek(SeekFrom::Start(chunk.data_offset))?;
 
-        let mut data = vec![0u8; chunk.size as usize];
+        let size =
+            usize::try_from(chunk.size).expect("Chunk size exceeds platform limits (32-bit)");
+        let mut data = vec![0u8; size];
         self.reader.read_exact(&mut data)?;
 
         self.bytes_read += u64::from(chunk.size);
@@ -122,10 +124,11 @@ impl<R: Read + Seek> RiffReader<R> {
     /// 未読のバイトが残っている場合、`IncompleteParse`エラーを返します。
     pub fn verify_complete(&self) -> Result<()> {
         if self.bytes_read < self.file_size {
-            return Err(ParseError::IncompleteParse(
-                (self.file_size - self.bytes_read) as usize,
-                self.bytes_read as usize,
-            ));
+            let bytes_read = usize::try_from(self.bytes_read)
+                .expect("File size exceeds platform limits (32-bit)");
+            let remaining = usize::try_from(self.file_size - self.bytes_read)
+                .expect("File size exceeds platform limits (32-bit)");
+            return Err(ParseError::IncompleteParse(remaining, bytes_read));
         }
         Ok(())
     }

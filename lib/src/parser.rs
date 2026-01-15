@@ -189,7 +189,7 @@ mod tests {
             comment: "Test".to_string(),
             device_type: "INST".to_string(),
             modes: vec![],
-            name: "".to_string(), // 空の名前
+            name: String::new(), // 空の名前
             types: vec![],
             uuid: "test".to_string(),
             vendor: "Test".to_string(),
@@ -212,7 +212,7 @@ mod tests {
             name: "Test".to_string(),
             types: vec![],
             uuid: "test".to_string(),
-            vendor: "".to_string(), // 空のベンダー
+            vendor: String::new(), // 空のベンダー
         };
 
         let result = validate_nisi_metadata(&metadata);

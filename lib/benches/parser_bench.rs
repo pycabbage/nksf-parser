@@ -15,7 +15,7 @@ fn bench_parse_abandoned(c: &mut Criterion) {
     let data = fs::read(&path).expect("Failed to read fixture file");
 
     c.bench_function("parse_abandoned", |b| {
-        b.iter(|| parse_nksf_from_bytes(black_box(&data)))
+        b.iter(|| parse_nksf_from_bytes(black_box(&data)));
     });
 }
 
@@ -42,7 +42,7 @@ fn bench_parse_multiple_presets(c: &mut Criterion) {
             for data in &files {
                 let _ = parse_nksf_from_bytes(black_box(data));
             }
-        })
+        });
     });
 }
 

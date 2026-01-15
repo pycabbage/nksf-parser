@@ -55,7 +55,7 @@ fn test_unknown_chunk() {
 // =====================================
 
 #[test]
-#[ignore] // 通常のテスト実行では除外
+#[ignore = "通常のテスト実行では除外"]
 fn test_parse_performance() {
     use std::time::Instant;
 
@@ -80,16 +80,12 @@ fn test_parse_performance() {
     }
 
     let avg_time = total_time / file_count;
-    println!(
-        "Parsed {} files in {:?} (avg: {:?} per file)",
-        file_count, total_time, avg_time
-    );
+    println!("Parsed {file_count} files in {total_time:?} (avg: {avg_time:?} per file)");
 
     // 1ファイルあたり10ms以内の目標
     assert!(
         avg_time.as_millis() < 10,
-        "Parse time too slow: {:?}",
-        avg_time
+        "Parse time too slow: {avg_time:?}"
     );
 }
 
@@ -111,7 +107,9 @@ proptest! {
     fn test_parser_with_valid_riff_header(payload in prop::collection::vec(any::<u8>(), 0..1000)) {
         let mut data = Vec::new();
         data.extend_from_slice(b"RIFF");
-        data.extend_from_slice(&((payload.len() as u32) + 4).to_le_bytes());
+        let payload_len = u32::try_from(payload.len())
+            .expect("Payload size exceeds u32 limits");
+        data.extend_from_slice(&(payload_len + 4).to_le_bytes());
         data.extend_from_slice(b"NIKS");
         data.extend_from_slice(&payload);
 

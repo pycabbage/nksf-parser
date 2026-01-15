@@ -1,4 +1,5 @@
 use clap::Parser;
+use nksf_parser::ParseError;
 use std::path::PathBuf;
 use std::process;
 
@@ -26,7 +27,6 @@ fn main() {
             eprintln!("Reason: {e}");
 
             // エラーの種類に応じた追加情報を提供
-            use nksf_parser::ParseError;
             match e {
                 ParseError::IoError(_) => {
                     eprintln!("Hint: Check if the file exists and you have read permission.");
@@ -38,16 +38,14 @@ fn main() {
                     eprintln!("Hint: The file is not a valid NKSF file or contains invalid data.");
                 }
                 ParseError::UnknownChunk(chunk_id) => {
-                    eprintln!(
-                        "Hint: The file contains an unknown chunk type: {chunk_id}"
-                    );
+                    eprintln!("Hint: The file contains an unknown chunk type: {chunk_id}");
                 }
                 ParseError::IncompleteParse(remaining, offset) => {
                     eprintln!(
                         "Hint: {remaining} bytes at offset {offset} were not parsed. The file may be corrupted."
                     );
                 }
-                _ => {}
+                ParseError::MessagePackError(_) => {}
             }
 
             process::exit(1);
