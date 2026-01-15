@@ -261,21 +261,21 @@ fn generate_jsonl_filename(first_input: &Path, count: usize, output_dir: &Path) 
 
 ## 完了条件
 
-- [ ] `--jsonl`フラグが実装されている
-- [ ] `-c, --compact`オプションが削除されている
-- [ ] 単一ファイル + デフォルト（pretty-print JSON）が動作する
-- [ ] 単一ファイル + `--jsonl`（コンパクトJSON）が動作する
-- [ ] 単一ファイル + `-o` + `--jsonl`が動作する
-- [ ] 複数ファイル + `-o`（JSONL結合）が動作する
-- [ ] 複数ファイル + `-d`のみ（個別JSON）が動作する
-- [ ] 複数ファイル + `-d` + `--jsonl`（自動命名JSONL）が動作する
-- [ ] 複数ファイル + `--jsonl`のみ（カレントに自動命名JSONL）が動作する
-- [ ] JSONL自動命名が正しい形式（`{first}_3files.jsonl`）で生成される
-- [ ] `-o`指定の警告メッセージが削除されている（複数ファイル時は常にJSONL）
-- [ ] README.mdのCLI使用例が更新されている
-- [ ] `cargo fmt`実行済み
-- [ ] `cargo clippy`で警告なし
-- [ ] 全テストが成功する
+- [x] `--jsonl`フラグが実装されている
+- [x] `-c, --compact`オプションが削除されている
+- [x] 単一ファイル + デフォルト（pretty-print JSON）が動作する
+- [x] 単一ファイル + `--jsonl`（コンパクトJSON）が動作する
+- [x] 単一ファイル + `-o` + `--jsonl`が動作する
+- [x] 複数ファイル + `-o`（JSONL結合）が動作する
+- [x] 複数ファイル + `-d`のみ（個別JSON）が動作する
+- [x] 複数ファイル + `-d` + `--jsonl`（自動命名JSONL）が動作する
+- [x] 複数ファイル + `--jsonl`のみ（カレントに自動命名JSONL）が動作する
+- [x] JSONL自動命名が正しい形式（`{first}_3files.jsonl`）で生成される
+- [x] `-o`指定の警告メッセージが削除されている（複数ファイル時は常にJSONL）
+- [x] README.mdのCLI使用例が更新されている
+- [x] `cargo fmt`実行済み
+- [x] `cargo clippy`で警告なし
+- [x] 全テストが成功する
 
 ## 使用例
 
@@ -329,7 +329,7 @@ nksf-parser-cli -d ./output preset1.nksf preset2.nksf preset3.nksf --jsonl
 
 ---
 
-**Status**: Not Started
+**Status**: Completed
 **Priority**: Medium
 **Estimated Time**: 1-2時間
 **Dependencies**: タスク019完了

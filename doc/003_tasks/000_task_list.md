@@ -176,7 +176,7 @@ CLIツールにJSON Lines (JSONL)形式のサポートを追加し、複数フ�
 - `-c, --compact`オプションの削除
 - 複数ファイルのJSONL結合出力対応
 
-Status: Not Started
+Status: Completed
 
 ---
 

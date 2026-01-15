@@ -24,9 +24,9 @@ struct Args {
     #[arg(short, long)]
     dir: Option<PathBuf>,
 
-    /// Output compact JSON (no pretty printing)
-    #[arg(short, long)]
-    compact: bool,
+    /// Output in JSON Lines format (one JSON object per line)
+    #[arg(long)]
+    jsonl: bool,
 
     /// Overwrite existing files without asking
     #[arg(long)]
@@ -41,16 +41,16 @@ fn main() {
             &args.input[0],
             args.output.as_deref(),
             args.dir.as_deref(),
-            args.compact,
+            args.jsonl,
             args.overwrite,
         )
     } else {
         process_multiple_files(
             &args.input,
+            args.output.as_deref(),
             args.dir.as_deref(),
-            args.compact,
+            args.jsonl,
             args.overwrite,
-            args.output.is_some(),
         )
     };
 
@@ -65,11 +65,15 @@ fn process_single_file(
     input: &Path,
     output: Option<&Path>,
     dir: Option<&Path>,
-    compact: bool,
+    jsonl: bool,
     overwrite: bool,
 ) -> Result<(), Box<dyn Error>> {
     let nksf = parse_with_error_hints(input)?;
-    let json_output = serialize_json(&nksf, compact)?;
+    let json_output = if jsonl {
+        serialize_json(&nksf)?
+    } else {
+        serialize_json_pretty(&nksf)?
+    };
 
     match (output, dir) {
         (None, None) => {
@@ -100,30 +104,33 @@ fn process_single_file(
 /// 複数ファイルを処理
 fn process_multiple_files(
     inputs: &[PathBuf],
+    output: Option<&Path>,
     dir: Option<&Path>,
-    compact: bool,
+    jsonl: bool,
     overwrite: bool,
-    output_specified: bool,
 ) -> Result<(), Box<dyn Error>> {
-    if output_specified {
-        eprintln!("Warning: -o option is ignored when multiple input files are specified");
-    }
-
-    let output_dir = dir.unwrap_or_else(|| Path::new("."));
-    verify_directory_exists(output_dir);
-
-    for input in inputs {
-        let nksf = parse_with_error_hints(input)?;
-        let json_output = serialize_json(&nksf, compact)?;
-
-        let output_file = generate_output_path(input, output_dir);
-        write_to_file(&output_file, &json_output, overwrite)?;
-
-        eprintln!(
-            "✓ Processed: {} -> {}",
-            input.display(),
-            output_file.display()
-        );
+    match (output, dir, jsonl) {
+        // Case 1: -o指定時 → 常にJSONL結合
+        (Some(output_file), _, _) => {
+            process_multiple_to_jsonl(inputs, output_file, overwrite)?;
+        }
+        // Case 2: -dのみ + --jsonl → 自動命名でJSONL結合
+        (None, Some(output_dir), true) => {
+            verify_directory_exists(output_dir);
+            let output_file = generate_jsonl_filename(&inputs[0], inputs.len(), output_dir);
+            process_multiple_to_jsonl(inputs, &output_file, overwrite)?;
+        }
+        // Case 3: --jsonlのみ → カレントディレクトリに自動命名でJSONL
+        (None, None, true) => {
+            let output_file = generate_jsonl_filename(&inputs[0], inputs.len(), Path::new("."));
+            process_multiple_to_jsonl(inputs, &output_file, overwrite)?;
+        }
+        // Case 4: -dのみ（--jsonlなし） → 個別JSON出力
+        (None, dir, false) => {
+            let output_dir = dir.unwrap_or_else(|| Path::new("."));
+            verify_directory_exists(output_dir);
+            process_multiple_to_individual_files(inputs, output_dir, overwrite)?;
+        }
     }
 
     Ok(())
@@ -163,14 +170,83 @@ fn parse_with_error_hints(input: &Path) -> Result<nksf_parser::NksfFile, Box<dyn
     }
 }
 
-/// JSON文字列にシリアライズ
-fn serialize_json(nksf: &nksf_parser::NksfFile, compact: bool) -> Result<String, Box<dyn Error>> {
-    let json = if compact {
-        serde_json::to_string(nksf)?
-    } else {
-        serde_json::to_string_pretty(nksf)?
-    };
+/// JSON文字列にシリアライズ（コンパクト形式）
+fn serialize_json(nksf: &nksf_parser::NksfFile) -> Result<String, Box<dyn Error>> {
+    let json = serde_json::to_string(nksf)?;
     Ok(json)
+}
+
+/// JSON文字列にシリアライズ（整形あり）
+fn serialize_json_pretty(nksf: &nksf_parser::NksfFile) -> Result<String, Box<dyn Error>> {
+    let json = serde_json::to_string_pretty(nksf)?;
+    Ok(json)
+}
+
+/// 複数ファイルを1つのJSONLファイルに結合
+fn process_multiple_to_jsonl(
+    inputs: &[PathBuf],
+    output_file: &Path,
+    overwrite: bool,
+) -> Result<(), Box<dyn Error>> {
+    if output_file.exists() && !overwrite {
+        eprintln!(
+            "Error: Output file '{}' already exists",
+            output_file.display()
+        );
+        eprintln!("Hint: Use --overwrite to overwrite existing files");
+        process::exit(1);
+    }
+
+    let mut lines = Vec::new();
+
+    for input in inputs {
+        let nksf = parse_with_error_hints(input)?;
+        let json_line = serialize_json(&nksf)?;
+        lines.push(json_line);
+    }
+
+    let jsonl_content = lines.join("\n");
+    std::fs::write(output_file, jsonl_content)?;
+
+    eprintln!(
+        "✓ Processed {} files -> {}",
+        inputs.len(),
+        output_file.display()
+    );
+    Ok(())
+}
+
+/// 複数ファイルを個別のJSONファイルに出力
+fn process_multiple_to_individual_files(
+    inputs: &[PathBuf],
+    output_dir: &Path,
+    overwrite: bool,
+) -> Result<(), Box<dyn Error>> {
+    for input in inputs {
+        let nksf = parse_with_error_hints(input)?;
+        let json_output = serialize_json_pretty(&nksf)?;
+
+        let output_file = generate_output_path(input, output_dir);
+        write_to_file(&output_file, &json_output, overwrite)?;
+
+        eprintln!(
+            "✓ Processed: {} -> {}",
+            input.display(),
+            output_file.display()
+        );
+    }
+
+    Ok(())
+}
+
+/// JSONL自動命名時のファイル名を生成
+fn generate_jsonl_filename(first_input: &Path, count: usize, output_dir: &Path) -> PathBuf {
+    let file_stem = first_input.file_stem().unwrap_or_default();
+    output_dir.join(format!(
+        "{}_{}files.jsonl",
+        file_stem.to_string_lossy(),
+        count
+    ))
 }
 
 /// 入力ファイル名から出力ファイルパスを生成

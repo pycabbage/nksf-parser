@@ -9,11 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 実装状況
 
 - ✅ パーサーライブラリ完成（全4チャンク対応）
-- ✅ CLIツール完成（JSON出力機能）
+- ✅ CLIツール完成（JSON/JSONL出力、複数ファイル処理対応）
 - ✅ 全720個のMassive X Libraryプリセット対応確認済み
 - ✅ セキュリティ対策実装済み（DoS攻撃防御）
 - ✅ テストライブラリ導入完了（rstest, cargo-nextest, insta, pretty_assertions, proptest, criterion）
-- ✅ 全741テスト成功（ユニット32 + 統合9 + fixture 720）
+- ✅ 全759テスト成功（ユニット32 + 統合7 + fixture 720）
 
 ### アーキテクチャ
 
@@ -26,8 +26,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - セキュリティ対策: チャンクサイズ上限（100MB）、zlib展開サイズ上限（50MB）
 - **cli** (`nksf-parser-cli`): コマンドラインインターフェース
   - libを使用して.nksfファイルを解析
-  - 解析結果をJSON形式で出力
-  - `--compact`フラグでコンパクトJSON出力対応
+  - 解析結果をJSON/JSONL形式で出力
+  - 複数ファイルの一括処理対応
+  - 出力先の柔軟な指定（`-o`, `-d`オプション）
+  - JSONL形式での結合出力対応（`--jsonl`フラグ）
   - ユーザーフレンドリーなエラーメッセージ
 
 ## 開発コマンド
@@ -176,6 +178,7 @@ cargo add --dev <package-name>
 
 **現在の状況**:
 - ユニットテスト: 32個実装済み ✅
-- 統合テスト: 39個実装済み ✅
-- 全720プリセットの期待値データ生成完了（約400MB）✅
+- 統合テスト: 7個実装済み ✅
+- fixtureテスト: 720個実装済み（rstest + insta）✅
+- スナップショットファイル: 720個（約380MB、YAML形式）✅
 - 全720プリセットの解析確認済み ✅

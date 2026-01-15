@@ -36,25 +36,43 @@ cargo build --release
 
 ### CLIツール
 
+**単一ファイル処理**:
 ```bash
 # JSON出力（整形あり、stdoutへ出力）
 nksf-parser-cli preset.nksf
 
-# コンパクトJSON出力
-nksf-parser-cli preset.nksf --compact
+# JSONL形式（コンパクト、1行）
+nksf-parser-cli preset.nksf --jsonl
 
 # ファイルに保存
 nksf-parser-cli preset.nksf -o output.json
 
 # ディレクトリ指定
 nksf-parser-cli preset.nksf -d ./output
+```
 
-# 複数ファイルの処理
+**複数ファイル処理**:
+```bash
+# 個別JSON出力（カレントディレクトリ）
 nksf-parser-cli preset1.nksf preset2.nksf preset3.nksf
 
-# 複数ファイル + ディレクトリ指定
+# 個別JSON出力（ディレクトリ指定）
 nksf-parser-cli -d ./output *.nksf
 
+# JSONL結合出力（ファイル指定）
+nksf-parser-cli -o combined.jsonl preset1.nksf preset2.nksf
+
+# JSONL自動命名（カレント）
+nksf-parser-cli preset1.nksf preset2.nksf preset3.nksf --jsonl
+# → preset1_3files.jsonl
+
+# JSONL自動命名（ディレクトリ指定）
+nksf-parser-cli -d ./output *.nksf --jsonl
+# → ./output/preset1_3files.jsonl
+```
+
+**その他**:
+```bash
 # 既存ファイルを上書き
 nksf-parser-cli preset.nksf -o output.json --overwrite
 
