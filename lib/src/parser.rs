@@ -21,7 +21,7 @@ use std::path::Path;
 /// * `IoError` - ファイルが存在しない、または読み取れない
 /// * `InvalidRiff` - 不正なRIFFフォーマット
 /// * `InvalidNiks` - 不正なNIKSフォーマット、または必須チャンクが欠けている
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 /// * `IncompleteParse` - 未解析のバイトが残っている
 ///
 /// # Examples
@@ -51,7 +51,7 @@ pub fn parse_nksf(path: &Path) -> Result<NksfFile> {
 /// # Errors
 /// * `InvalidRiff` - 不正なRIFFフォーマット
 /// * `InvalidNiks` - 不正なNIKSフォーマット、または必須チャンクが欠けている
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 /// * `IncompleteParse` - 未解析のバイトが残っている
 ///
 /// # Examples
@@ -94,7 +94,7 @@ fn validate_nica_parameters(parameters: &NicaData) -> Result<()> {
         if let Some(params) = array.as_array() {
             let mut ids = HashSet::new();
             for param in params {
-                if let Some(id) = param.get("id").and_then(|v| v.as_u64())
+                if let Some(id) = param.get("id").and_then(serde_json::Value::as_u64)
                     && !ids.insert(id)
                 {
                     return Err(ParseError::InvalidNiks);

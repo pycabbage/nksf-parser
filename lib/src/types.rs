@@ -62,7 +62,7 @@ pub struct NisiMetadata {
 }
 
 /// 内部データ（詳細構造は調査中）
-/// 現時点では全データを保持するためにserde_json::Valueを使用
+/// `現時点では全データを保持するためにserde_json::Valueを使用`
 pub type NiInternal = serde_json::Value;
 
 /// PLIDチャンク（Plugin ID）

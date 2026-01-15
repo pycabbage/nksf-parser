@@ -23,7 +23,7 @@ fn main() {
         Ok(nksf) => nksf,
         Err(e) => {
             eprintln!("Error: Failed to parse '{}'", args.input.display());
-            eprintln!("Reason: {}", e);
+            eprintln!("Reason: {e}");
 
             // エラーの種類に応じた追加情報を提供
             use nksf_parser::ParseError;
@@ -39,14 +39,12 @@ fn main() {
                 }
                 ParseError::UnknownChunk(chunk_id) => {
                     eprintln!(
-                        "Hint: The file contains an unknown chunk type: {}",
-                        chunk_id
+                        "Hint: The file contains an unknown chunk type: {chunk_id}"
                     );
                 }
                 ParseError::IncompleteParse(remaining, offset) => {
                     eprintln!(
-                        "Hint: {} bytes at offset {} were not parsed. The file may be corrupted.",
-                        remaining, offset
+                        "Hint: {remaining} bytes at offset {offset} were not parsed. The file may be corrupted."
                     );
                 }
                 _ => {}
@@ -61,7 +59,7 @@ fn main() {
         match serde_json::to_string(&result) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Error serializing to JSON: {}", e);
+                eprintln!("Error serializing to JSON: {e}");
                 process::exit(1);
             }
         }
@@ -69,11 +67,11 @@ fn main() {
         match serde_json::to_string_pretty(&result) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Error serializing to JSON: {}", e);
+                eprintln!("Error serializing to JSON: {e}");
                 process::exit(1);
             }
         }
     };
 
-    println!("{}", json_output);
+    println!("{json_output}");
 }

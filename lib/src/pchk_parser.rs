@@ -24,7 +24,7 @@ const MAX_MSGPACK_VALUES: usize = 100_000;
 /// # Errors
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
 /// * `IoError` - zlib展開エラー
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 /// * `IncompleteParse` - 展開後のデータに未解析バイトが残っている
 pub fn parse_pchk_chunk(data: &[u8]) -> Result<PchkData> {
     if data.len() < PCHK_HEADER_SIZE {

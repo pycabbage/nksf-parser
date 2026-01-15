@@ -12,7 +12,7 @@ use crate::types::NicaData;
 ///
 /// # Errors
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 pub fn parse_nica_chunk(data: &[u8]) -> Result<NicaData> {
     parse_versioned_msgpack(data)
 }

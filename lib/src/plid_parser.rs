@@ -12,7 +12,7 @@ use crate::types::PlidData;
 ///
 /// # Errors
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 pub fn parse_plid_chunk(data: &[u8]) -> Result<PlidData> {
     parse_versioned_msgpack(data)
 }

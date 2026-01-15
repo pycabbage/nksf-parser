@@ -1,6 +1,6 @@
 use crate::error::{ParseError, Result};
 
-/// バージョン付きMessagePackデータを解析
+/// `バージョン付きMessagePackデータを解析`
 ///
 /// NISIチャンク、NICAチャンク、PLIDチャンクで共通の処理
 ///
@@ -12,7 +12,7 @@ use crate::error::{ParseError, Result};
 ///
 /// # Errors
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 pub fn parse_versioned_msgpack<T: serde::de::DeserializeOwned>(data: &[u8]) -> Result<T> {
     if data.len() < 4 {
         return Err(ParseError::InvalidNiks);

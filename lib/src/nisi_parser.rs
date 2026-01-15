@@ -12,7 +12,7 @@ use crate::types::NisiMetadata;
 ///
 /// # Errors
 /// * `InvalidNiks` - データサイズが不正、またはサポートされていないバージョン
-/// * `MessagePackError` - MessagePackデシリアライズエラー
+/// * `MessagePackError` - `MessagePackデシリアライズエラー`
 pub fn parse_nisi_chunk(data: &[u8]) -> Result<NisiMetadata> {
     parse_versioned_msgpack(data)
 }

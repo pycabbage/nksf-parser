@@ -11,7 +11,7 @@ pub enum ParseError {
     #[error("Invalid NIKS format")]
     InvalidNiks,
 
-    /// MessagePackデシリアライズエラー
+    /// `MessagePackデシリアライズエラー`
     #[error("MessagePack deserialization error: {0}")]
     MessagePackError(#[from] rmp_serde::decode::Error),
 

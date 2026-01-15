@@ -38,7 +38,7 @@ impl<R: Read + Seek> RiffReader<R> {
         let mut size_bytes = [0u8; 4];
         reader.read_exact(&mut size_bytes)?;
         // RIFFファイルサイズ = RIFFヘッダー(8バイト) + ペイロードサイズ
-        let riff_payload_size = u32::from_le_bytes(size_bytes) as u64;
+        let riff_payload_size = u64::from(u32::from_le_bytes(size_bytes));
         let file_size = riff_payload_size + 8; // RIFF(4) + size(4)
 
         let mut format_id = [0u8; 4];
@@ -65,7 +65,7 @@ impl<R: Read + Seek> RiffReader<R> {
 
         let mut chunk_id = [0u8; 4];
         match self.reader.read_exact(&mut chunk_id) {
-            Ok(_) => {}
+            Ok(()) => {}
             Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
                 return Ok(None);
             }
@@ -103,7 +103,7 @@ impl<R: Read + Seek> RiffReader<R> {
         let mut data = vec![0u8; chunk.size as usize];
         self.reader.read_exact(&mut data)?;
 
-        self.bytes_read += chunk.size as u64;
+        self.bytes_read += u64::from(chunk.size);
 
         // RIFFフォーマットでは、奇数バイトのチャンクには1バイトのパディングが追加される
         // これをスキップしないと、次のチャンクの読み取り位置がずれる
