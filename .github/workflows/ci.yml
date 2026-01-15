@@ -141,7 +141,8 @@ jobs:
           for file in $(ls artifacts/**/*)
           do
             RENAMED="$(echo $file | sed -E 's/^(artifacts\/)(.+)\/[^\.]+(\.?.*)$/\1files\/\2\3/')"
-            echo -e "$file\t$RENAMED"
+            echo -e "$file\t->\t$RENAMED"
+            mv "$file" "$RENAMED"
           done
 
       - name: Create GitHub Release
