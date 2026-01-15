@@ -58,13 +58,13 @@ cargo nextest run -p nksf-parser
 
 # 特定のテストファイル実行
 cargo nextest run --test integration
-cargo nextest run --test fixture_test_001  # Part 1/8のみ
+cargo nextest run --test fixture_test  # 720プリセット
 
 # プロパティベーステスト実行
 cargo test --test integration test_parser_never_panics
 
 # スナップショットテスト（更新モード）
-INSTA_UPDATE=always cargo test --test fixture_test_001
+INSTA_UPDATE=always cargo test --test fixture_test
 
 # ベンチマーク実行
 cargo bench
@@ -115,15 +115,15 @@ cargo add --dev <package-name>
 
 2. **統合テスト**: `lib/tests` 以下に配置
    - **integration.rs**: エラーケーステスト、プロパティベーステスト
-   - **fixture_test_001.rs ~ fixture_test_008.rs**: 720プリセットの統合テスト（rstest + insta）
-     - 各ファイル100プリセット（最後のみ20プリセット）
-     - メモリ枯渇回避のため分割
+   - **fixture_test.rs**: 720プリセットの統合テスト（rstest + insta）
+     - 720個の`#[case]`を1つの関数で実行
    - **snapshots/**: instaスナップショットファイル（約380MB）
-     - `fixture_test_*__<Preset Name>.snap` × 720個: 各プリセットの期待値（YAML形式）
+     - `fixture_test__<Preset Name>.snap` × 720個: 各プリセットの期待値（YAML形式）
    - **massive_x_factory_library_tests/fixture/**: テストフィクスチャ
      - `*.nksf` × 720個: 全Massive X Libraryプリセット
-   - **benches/**: パフォーマンステスト（criterion）
-     - `parser_bench.rs`: パース処理のベンチマーク
+
+3. **ベンチマーク**: `lib/benches` に配置
+   - **parser_bench.rs**: パース処理のベンチマーク（criterion）
 
 ### テスト技術スタック
 
@@ -139,10 +139,10 @@ cargo add --dev <package-name>
 新しいプリセットファイルを追加した場合:
 
 1. fixtureディレクトリに`.nksf`ファイルを配置
-2. テストファイルに`#[case("New Preset")]`を追加
+2. `lib/tests/fixture_test.rs`に`#[case("New Preset")]`を追加
 3. スナップショットを生成・承認:
    ```bash
-   INSTA_UPDATE=always cargo test --test fixture_test_001
+   INSTA_UPDATE=always cargo test --test fixture_test
    ```
 
 **注意**: スナップショットファイルは全てGitにコミットされます（約380MB）。
