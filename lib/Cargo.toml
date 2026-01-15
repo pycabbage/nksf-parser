@@ -1,7 +1,9 @@
 [package]
 name = "nksf-parser"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 [dependencies]
 flate2 = "1.1.8"

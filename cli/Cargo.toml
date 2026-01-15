@@ -1,7 +1,9 @@
 [package]
 name = "nksf-parser-cli"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 [dependencies]
 clap = { version = "4.5.54", features = ["derive"] }
