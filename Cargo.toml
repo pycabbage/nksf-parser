@@ -4,3 +4,9 @@ members = [
   "cli"
 ]
 resolver = "2"
+
+# insta/similarのパフォーマンス最適化（公式推奨）
+# 大規模スナップショット（720プリセット）での高速化
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3

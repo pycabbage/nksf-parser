@@ -1,5 +1,3 @@
-mod massive_x_factory_library_tests;
-
 use nksf_parser::{ParseError, parse_nksf_from_bytes};
 use std::path::PathBuf;
 
@@ -93,4 +91,30 @@ fn test_parse_performance() {
         "Parse time too slow: {:?}",
         avg_time
     );
+}
+
+// =====================================
+// プロパティベーステスト
+// =====================================
+
+use proptest::prelude::*;
+
+proptest! {
+    /// パーサーが任意のバイト列でパニックしないことを検証
+    #[test]
+    fn test_parser_never_panics(data in prop::collection::vec(any::<u8>(), 0..10000)) {
+        let _ = parse_nksf_from_bytes(&data);
+    }
+
+    /// RIFFヘッダーが正しい場合でも、任意の後続データでパニックしないことを検証
+    #[test]
+    fn test_parser_with_valid_riff_header(payload in prop::collection::vec(any::<u8>(), 0..1000)) {
+        let mut data = Vec::new();
+        data.extend_from_slice(b"RIFF");
+        data.extend_from_slice(&((payload.len() as u32) + 4).to_le_bytes());
+        data.extend_from_slice(b"NIKS");
+        data.extend_from_slice(&payload);
+
+        let _ = parse_nksf_from_bytes(&data);
+    }
 }

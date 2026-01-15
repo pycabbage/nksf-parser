@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ CLIツール完成（JSON出力機能）
 - ✅ 全720個のMassive X Libraryプリセット対応確認済み
 - ✅ セキュリティ対策実装済み（DoS攻撃防御）
-- ✅ 全39テスト成功（ユニット32 + 統合7）
-- ⚠️ 期待値データ生成完了（720個、約400MB）、テスト統合作業中
+- ✅ テストライブラリ導入完了（rstest, cargo-nextest, insta, pretty_assertions, proptest, criterion）
+- ✅ 全741テスト成功（ユニット32 + 統合9 + fixture 720）
 
 ### アーキテクチャ
 
@@ -47,20 +47,27 @@ cargo build -p nksf-parser-cli   # CLIのみ
 
 ### テスト
 ```bash
-# 全テスト実行（推奨）
+# 全テスト実行（cargo-nextest使用、推奨）
+cargo nextest run
+
+# 従来のテストランナー使用
 cargo test
 
 # ライブラリのテストのみ
-cargo test -p nksf-parser
+cargo nextest run -p nksf-parser
 
 # 特定のテストファイル実行
-cargo test -p nksf-parser --test integration
+cargo nextest run --test integration
+cargo nextest run --test fixture_test_001  # Part 1/8のみ
 
-# 特定のプリセットのテスト実行
-cargo test -p nksf-parser test_abandoned
+# プロパティベーステスト実行
+cargo test --test integration test_parser_never_panics
 
-# パフォーマンステスト実行（通常はスキップされる）
-cargo test -p nksf-parser -- --ignored
+# スナップショットテスト（更新モード）
+INSTA_UPDATE=always cargo test --test fixture_test_001
+
+# ベンチマーク実行
+cargo bench
 ```
 
 ### フォーマット・Lint
@@ -86,6 +93,14 @@ cd cli && cargo add <package-name>
 
 # 開発依存関係の追加
 cargo add --dev <package-name>
+
+# 現在の開発依存関係
+# - rstest: パラメータ化テスト・フィクスチャ
+# - cargo-nextest: 高速テストランナー
+# - insta: スナップショットテスト
+# - pretty_assertions: アサーション強化
+# - proptest: プロパティベーステスト
+# - criterion: ベンチマーク
 ```
 
 ## テスト構造
@@ -99,46 +114,38 @@ cargo add --dev <package-name>
    - 合計: 32個
 
 2. **統合テスト**: `lib/tests` 以下に配置
-   - **integration.rs**: エラーケーステスト、パフォーマンステスト
-   - **fixture_test.rs**: プリセットファイルの統合テスト
-   - **massive_x_factory_library_tests/**: 期待値データ（約400MB）
-     - `mod.rs`: 720個の期待値モジュール宣言
-     - `*_expected_data.rs` × 720個: 各プリセットの完全な期待値データ（phf_map使用）
-     - `fixture/*.nksf`: 720個のプリセットファイル
-   - **generators/**: テスト生成スクリプト（通常のテスト実行では使用しない）
-     - `generate_all_preset_expected.rs`: 期待値ファイル自動生成
-     - `generate_fixture_test_functions.rs`: テスト関数自動生成
-     - `README.md`: 使用方法
+   - **integration.rs**: エラーケーステスト、プロパティベーステスト
+   - **fixture_test_001.rs ~ fixture_test_008.rs**: 720プリセットの統合テスト（rstest + insta）
+     - 各ファイル100プリセット（最後のみ20プリセット）
+     - メモリ枯渇回避のため分割
+   - **snapshots/**: instaスナップショットファイル（約380MB）
+     - `fixture_test_*__<Preset Name>.snap` × 720個: 各プリセットの期待値（YAML形式）
+   - **massive_x_factory_library_tests/fixture/**: テストフィクスチャ
+     - `*.nksf` × 720個: 全Massive X Libraryプリセット
+   - **benches/**: パフォーマンステスト（criterion）
+     - `parser_bench.rs`: パース処理のベンチマーク
 
-### 期待値データの構造
+### テスト技術スタック
 
-各`<preset>_expected_data.rs`ファイル（約550KB）には以下が含まれる:
-- `ExpectedNisiMetadata`: メタデータの期待値
-- `ExpectedParameter`: パラメータ構造
-- `EXPECTED_NISI`: NISIチャンクの期待値
-- `EXPECTED_NICA_PARAMS_0`, `EXPECTED_NICA_PARAMS_1`: NICAチャンクの期待値
-- `EXPECTED_PLID_*`: PLIDチャンクの期待値
-- `EXPECTED_PCHK_*`: PCHKチャンクの期待値
-- `EXPECTED_ABANDONED_STRINGS`: stringsセクション（約758エントリ、phf_map）
-- `EXPECTED_ABANDONED_DOUBLES`: doublesセクション（約1104エントリ、phf_map）
-- `EXPECTED_ABANDONED_INTS`: intsセクション（約383エントリ、phf_map）
-- `EXPECTED_ABANDONED_BOOLS`: boolsセクション（約1580エントリ、phf_map）
+- **rstest**: パラメータ化テスト（`#[case]`で720プリセットを1関数で実行）
+- **insta**: スナップショットテスト（YAMLで期待値を自動管理）
+- **proptest**: プロパティベーステスト（任意入力でパニックしないことを検証）
+- **criterion**: 統計的に正確なベンチマーク
+- **pretty_assertions**: テスト失敗時のdiff表示
+- **cargo-nextest**: 高速並列テスト実行
 
-### テスト生成の手順
+### スナップショットテストの管理
 
 新しいプリセットファイルを追加した場合:
 
 1. fixtureディレクトリに`.nksf`ファイルを配置
-2. 期待値ファイルを生成:
+2. テストファイルに`#[case("New Preset")]`を追加
+3. スナップショットを生成・承認:
    ```bash
-   cargo test -p nksf-parser generate_all_preset_expected_data -- --nocapture --ignored
-   ```
-3. テスト関数を生成（必要に応じて）:
-   ```bash
-   cargo test -p nksf-parser generate_fixture_test_functions -- --nocapture --ignored
+   INSTA_UPDATE=always cargo test --test fixture_test_001
    ```
 
-**注意**: 期待値ファイル生成は約10秒、全720個で約400MBのデータが生成されます。
+**注意**: スナップショットファイルは全てGitにコミットされます（約380MB）。
 
 ## コーディング規約
 

@@ -155,7 +155,7 @@ Status: Completed
 - 必須級: rstest, cargo-nextest, insta, pretty_assertions
 - 強く推奨: proptest, criterion
 
-Status: Not Started
+Status: Completed
 
 ---
 
