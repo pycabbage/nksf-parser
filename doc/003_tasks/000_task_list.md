@@ -168,6 +168,16 @@ CLIツールのコマンドラインオプションを拡充し、複数ファ�
 
 Status: Completed
 
+### 020: JSONLサポート
+
+CLIツールにJSON Lines (JSONL)形式のサポートを追加し、複数ファイルの効率的な処理を実現する。
+
+- `--jsonl`フラグの追加
+- `-c, --compact`オプションの削除
+- 複数ファイルのJSONL結合出力対応
+
+Status: Not Started
+
 ---
 
 ## 実装順序
@@ -179,7 +189,7 @@ Status: Completed
 5. 012 → 013 (Phase 5)
 6. 014 → 015 → 016 → 017 (Phase 6)
 7. 018 (Phase 7)
-8. **019** (Phase 8)
+8. 019 → **020** (Phase 8)
 
 ## 品質基準
 
