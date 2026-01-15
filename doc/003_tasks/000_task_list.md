@@ -166,7 +166,7 @@ CLIツールのコマンドラインオプションを拡充し、複数ファ�
 - 追加オプション: `-o,--output`, `-d,--dir`, `-v,--version`, `--overwrite`
 - 複数ファイル入力対応
 
-Status: Not Started
+Status: Completed
 
 ---
 

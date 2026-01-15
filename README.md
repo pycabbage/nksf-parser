@@ -37,14 +37,29 @@ cargo build --release
 ### CLIツール
 
 ```bash
-# JSON出力（整形あり）
+# JSON出力（整形あり、stdoutへ出力）
 nksf-parser-cli preset.nksf
 
 # コンパクトJSON出力
 nksf-parser-cli preset.nksf --compact
 
 # ファイルに保存
-nksf-parser-cli preset.nksf > output.json
+nksf-parser-cli preset.nksf -o output.json
+
+# ディレクトリ指定
+nksf-parser-cli preset.nksf -d ./output
+
+# 複数ファイルの処理
+nksf-parser-cli preset1.nksf preset2.nksf preset3.nksf
+
+# 複数ファイル + ディレクトリ指定
+nksf-parser-cli -d ./output *.nksf
+
+# 既存ファイルを上書き
+nksf-parser-cli preset.nksf -o output.json --overwrite
+
+# バージョン表示
+nksf-parser-cli --version
 ```
 
 ### ライブラリとして使用
