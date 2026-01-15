@@ -135,10 +135,18 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: ./artifacts
+      - name: Rename files
+        run: |
+          mkdir -p artifacts/files
+          for file in $(ls artifacts/**/*)
+          do
+            RENAMED="$(echo $file | sed -E 's/^(artifacts\/)(.+)\/[^\.]+(\.?.*)$/\1files\/\2\3/')"
+            echo -e "$file\t$RENAMED"
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           generate_release_notes: true
-          files: ./artifacts/**
+          files: ./artifacts/files/*
