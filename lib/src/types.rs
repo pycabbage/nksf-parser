@@ -34,8 +34,8 @@ pub struct NksfFile {
 /// NISIチャンクのメタデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NisiMetadata {
-    /// 内部データ
-    #[serde(rename = "__ni_internal")]
+    /// 内部データ（一部のプリセットには存在しない）
+    #[serde(rename = "__ni_internal", default)]
     pub ni_internal: NiInternal,
     /// 作者名
     pub author: String,
@@ -216,5 +216,27 @@ mod tests {
             metadata.characters,
             vec!["Char1".to_string(), "Char2".to_string()]
         );
+    }
+
+    #[test]
+    fn test_nisi_metadata_deserialize_without_ni_internal() {
+        // 一部のプリセットには __ni_internal フィールドが存在しないため、
+        // デフォルト値（Null）でデシリアライズできること
+        let json = r#"{
+            "author": "Test Author",
+            "bankchain": ["Bank1"],
+            "characters": ["Char1"],
+            "comment": "Test Comment",
+            "deviceType": "INST",
+            "modes": ["Mode1"],
+            "name": "Test Preset",
+            "types": [["Type1"]],
+            "uuid": "test-uuid",
+            "vendor": "Test Vendor"
+        }"#;
+
+        let metadata: NisiMetadata = serde_json::from_str(json).expect("deserialization failed");
+        assert!(metadata.ni_internal.is_null());
+        assert_eq!(metadata.name, "Test Preset");
     }
 }
