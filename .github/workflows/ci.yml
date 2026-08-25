@@ -116,7 +116,7 @@ jobs:
         run: |
           cargo build -p nksf-parser-cli --release --target "${{ matrix.target }}"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: nksf-parser-cli-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.filename }}
