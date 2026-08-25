@@ -34,14 +34,15 @@ pub struct NksfFile {
 /// NISIチャンクのメタデータ
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NisiMetadata {
-    /// 内部データ
-    #[serde(rename = "__ni_internal")]
+    /// 内部データ（一部のプリセットには存在しない）
+    #[serde(rename = "__ni_internal", default)]
     pub ni_internal: NiInternal,
     /// 作者名
     pub author: String,
     /// バンクチェーン
     pub bankchain: Vec<String>,
-    /// キャラクタータグ
+    /// キャラクタータグ（古いライブラリで作成されたプリセットには存在しない）
+    #[serde(default)]
     pub characters: Vec<String>,
     /// コメント
     pub comment: String,
@@ -169,5 +170,73 @@ mod tests {
         // シリアライズできることを確認
         let serialized = serde_json::to_string(&metadata);
         assert!(serialized.is_ok());
+    }
+
+    #[test]
+    fn test_nisi_metadata_deserialize_without_characters() {
+        // 古いライブラリで作成されたプリセットには characters フィールドが
+        // 存在しないため、デフォルト値（空配列）でデシリアライズできること
+        let json = r#"{
+            "__ni_internal": "BRIB",
+            "author": "Test Author",
+            "bankchain": ["Bank1"],
+            "comment": "Test Comment",
+            "deviceType": "INST",
+            "modes": ["Mode1"],
+            "name": "Test Preset",
+            "types": [["Type1"]],
+            "uuid": "test-uuid",
+            "vendor": "Test Vendor"
+        }"#;
+
+        let metadata: NisiMetadata = serde_json::from_str(json).expect("deserialization failed");
+        assert!(metadata.characters.is_empty());
+        assert_eq!(metadata.modes, vec!["Mode1".to_string()]);
+    }
+
+    #[test]
+    fn test_nisi_metadata_deserialize_with_characters() {
+        // characters が存在する場合は従来通りデシリアライズできること
+        let json = r#"{
+            "__ni_internal": "BRIB",
+            "author": "Test Author",
+            "bankchain": ["Bank1"],
+            "characters": ["Char1", "Char2"],
+            "comment": "Test Comment",
+            "deviceType": "INST",
+            "modes": ["Mode1"],
+            "name": "Test Preset",
+            "types": [["Type1"]],
+            "uuid": "test-uuid",
+            "vendor": "Test Vendor"
+        }"#;
+
+        let metadata: NisiMetadata = serde_json::from_str(json).expect("deserialization failed");
+        assert_eq!(
+            metadata.characters,
+            vec!["Char1".to_string(), "Char2".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_nisi_metadata_deserialize_without_ni_internal() {
+        // 一部のプリセットには __ni_internal フィールドが存在しないため、
+        // デフォルト値（Null）でデシリアライズできること
+        let json = r#"{
+            "author": "Test Author",
+            "bankchain": ["Bank1"],
+            "characters": ["Char1"],
+            "comment": "Test Comment",
+            "deviceType": "INST",
+            "modes": ["Mode1"],
+            "name": "Test Preset",
+            "types": [["Type1"]],
+            "uuid": "test-uuid",
+            "vendor": "Test Vendor"
+        }"#;
+
+        let metadata: NisiMetadata = serde_json::from_str(json).expect("deserialization failed");
+        assert!(metadata.ni_internal.is_null());
+        assert_eq!(metadata.name, "Test Preset");
     }
 }
