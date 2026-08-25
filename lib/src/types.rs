@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nisi_metadata_roundtrip_with_characters() {
+    fn test_nisi_metadata_deserialize_with_characters() {
         // characters が存在する場合は従来通りデシリアライズできること
         let json = r#"{
             "__ni_internal": "BRIB",
