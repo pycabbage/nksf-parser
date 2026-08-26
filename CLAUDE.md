@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 開発環境のセットアップ
 
-- 必要なツール: Rust 1.70以上（推奨: 最新のstable版）、Cargo（同梱）
+- 必要なツール: edition 2024 に対応するRust（1.85以上。推奨: 最新のstable版）、Cargo（同梱）
 - セットアップ後の動作確認:
 
 ```bash

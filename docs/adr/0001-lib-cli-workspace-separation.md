@@ -39,7 +39,7 @@ Parser Library (lib)
 
 - **責任の分離**: 解析ロジックと出力ロジックは変更理由が異なる。分離により互いに影響せず進化できる。
 - **ライブラリ利用者の自由の保護**: ライブラリ側にJSON出力を持たせないことで、ライブラリ利用者はserde_json固有の出力形状に縛られない。構造体には`Serialize`/`Deserialize`を導出するが、具体的なフォーマットの選択は利用者に委ねられる。
-- **依存の最小化**: JSON出力に必要な依存（`serde_json`）はCLI側のみに置き、ライブラリを軽量に保つ。
+- **JSON出力ロジックのCLI側への集約**: JSONへの整形・出力（pretty-print、JSONL結合など）はCLIに閉じ込める。libでも`serde_json::Value`を生データ保持のために使用する（`NiInternal`、PCHK `values` 等）が、これは出力形式としてのJSONではなく、型未規定データのコンテナとしての利用である（[messagepack-encoding.md](../specs/messagepack-encoding.md) 参照）。
 - **テスト戦略の明確化**: パーサーの正しさ（全バイト解析）とCLIの振る舞い（出力形式・オプション）を独立にテストできる。
 
 ## 影響 / 結果
