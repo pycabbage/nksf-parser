@@ -40,17 +40,17 @@
 
 ## デコード例 1: NISI チャンク先頭
 
-`Abandoned.nksf` のオフセット `0x14`（NISI チャンク MessagePack データ部の先頭）から:
+`Abandoned.nksf` のオフセット `0x18`（NISI チャンク MessagePack データ部の先頭。チャンクは `0x0C` から始まり、ID 4 B + サイズ 4 B + バージョン 4 B の後ろにペイロードが続く）から:
 
 ```hex
 Offset  Bytes                               Decoded
 ------  --------------------------------    ------------------------------
-0x14    8b                                  fixmap (要素数 11)
-0x15    ad                                  fixstr (13文字)
-0x16    5f 5f 6e 69 5f 69 6e 74 65 72       "__ni_internal"
+0x18    8b                                  fixmap (要素数 11)
+0x19    ad                                  fixstr (13文字)
+0x1a    5f 5f 6e 69 5f 69 6e 74 65 72       "__ni_internal"
         6e 61 6c
-0x22    a4                                  fixstr (4文字)
-0x23    42 52 49 42                         "BRIB"
+0x26    a4                                  fixstr (4文字)
+0x27    42 52 49 42                         "BRIB"
         ...                                 (__ni_internal の値: 内部データ)
 ...     a6                                  fixstr (6文字)
         61 75 74 68 6f 72                   "author"
@@ -63,30 +63,30 @@ Offset  Bytes                               Decoded
 
 ## デコード例 2: NICA パラメータエントリ
 
-`Abandoned.nksf` のオフセット `0x170`（NICA チャンク MessagePack 部の先頭）から、最初のパラメータ 1 個分:
+`Abandoned.nksf` のオフセット `0x171`（NICA チャンク MessagePack 部の先頭）から、最初のパラメータ 1 個分:
 
 ```hex
 Offset  Bytes                               Decoded
 ------  --------------------------------    ------------------------------
-0x170   81                                  fixmap (要素数 1)
-0x171   a3                                  fixstr (3文字)
-0x172   6e 69 38                            "ni8"
-0x175   92                                  fixarray (要素数 2)
-0x176   98                                  fixarray (要素数 8)
-0x177   84                                  fixmap (要素数 4) — Parameter 0
-0x178   a8                                  fixstr (8文字)
-0x179   61 75 74 6f 6e 61 6d 65             "autoname"
-0x181   c3                                  true
-0x182   a2                                  fixstr (2文字)
-0x183   69 64                               "id"
-0x185   00                                  0 (positive fixint)
-0x186   a4                                  fixstr (4文字)
-0x187   6e 61 6d 65                         "name"
-0x18b   a8                                  fixstr (8文字)
-0x18c   57 54 20 50 6f 73 20 31             "WT Pos 1"
-0x194   a5                                  fixstr (5文字)
-0x195   76 66 6c 61 67                      "vflag"
-0x19a   c2                                  false
+0x171   81                                  fixmap (要素数 1)
+0x172   a3                                  fixstr (3文字)
+0x173   6e 69 38                            "ni8"
+0x176   92                                  fixarray (要素数 2)
+0x177   98                                  fixarray (要素数 8)
+0x178   84                                  fixmap (要素数 4) — Parameter 0
+0x179   a8                                  fixstr (8文字)
+0x17a   61 75 74 6f 6e 61 6d 65             "autoname"
+0x182   c3                                  true
+0x183   a2                                  fixstr (2文字)
+0x184   69 64                               "id"
+0x186   00                                  0 (positive fixint)
+0x187   a4                                  fixstr (4文字)
+0x188   6e 61 6d 65                         "name"
+0x18c   a8                                  fixstr (8文字)
+0x18d   57 54 20 50 6f 73 20 31             "WT Pos 1"
+0x195   a5                                  fixstr (5文字)
+0x196   76 66 6c 61 67                      "vflag"
+0x19b   c2                                  false
 ```
 
 この 1 エントリは次の JSON 相当のデータを表す:

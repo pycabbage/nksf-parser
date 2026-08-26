@@ -15,7 +15,7 @@ PCHK チャンクは Massive X プリセットの本体データ、すなわち�
 | +0x00 | 4 | version | バージョン。観測値: 常に 1 |
 | +0x04 | 4 | field1 | 用途未特定。観測値: 全プリセットで 2 |
 | +0x08 | 4 | field2 | 用途未特定。観測値: 0〜3 の可変値 |
-| +0x0C | 4 | compressed_size | zlib 圧縮データのバイト数。観測例: 31684 |
+| +0x0C | 4 | compressed_size | zlib 圧縮データのバイト数と推定される（実装では読み飛ばされ、チャンク末尾までを展開する）。観測例: 31684 |
 | +0x10 | 4 | field3 | 用途未特定、可変値 |
 
 - `field1` / `field2` / `field3` の意味は特定できていない（観測値のみ記載）。実装では構造体メンバとして生値を保持する。
@@ -23,8 +23,8 @@ PCHK チャンクは Massive X プリセットの本体データ、すなわち�
 
 ## zlib 圧縮データ
 
-- ヘッダ直後（オフセット 20）からが zlib ストリームで、先頭 2 バイトは zlib のマジック **`78 9c`**（deflate / デフォルト圧縮レベル）で始まる。
-- 展開後サイズは約 507 KB（観測例: 31,680 B → 507,182 B、圧縮率 約16倍）。
+- ヘッダ直後（オフセット 20）からチャンク末尾までが zlib ストリームで、先頭 2 バイトは zlib のマジック **`78 9c`**（deflate / デフォルト圧縮レベル）で始まる。
+- 展開後サイズは約 507 KB（`Abandoned.nksf` では圧縮データ 約31,680 B → 展開後 507,182 B、圧縮率 約16倍）。
 - セキュリティ対策として、パーサーは展開サイズを 50 MB に制限している（Zip Bomb 対策。上限到達時は `ParseError::InvalidNiks`）。
 
 > 実装: `flate2::read::ZlibDecoder` を使用
@@ -64,12 +64,12 @@ Map Sections の後に続く部分は配列値セクションである。
 | セクション | 観測される構造 | 内容 |
 |---|---|---|
 | `charVecs` | count=1、値としてマップ `{"intVecs": 42}` | メタデータ。**次のセクション (`intVecs`) のエントリ数を宣言する** |
-| `intVecs` | 42 ペア（String → Array[int]） | Performer/Keytracker のポイント座標等（固定小数点整数列） |
-| `floatVecs` | 41 ペア（String → Array[float]） | Performer のセグメント bending factors 等 |
+| `intVecs` | 宣言 42 / 実際 41 ペア（String → Array[int]） | Performer/Keytracker のポイント座標等（固定小数点整数列） |
+| `floatVecs` | 宣言 41 / 実際 40 ペア（String → Array[float]） | Performer のセグメント bending factors 等 |
 | `doubleVecs` | count=1 | 観測例ではデータペアを持たない（次セクション名への橋渡しのみ） |
-| `stringVecs` | 40 ペア（String → Array[string]） | Performer のセグメントタイプ、ページ名、タグ等 |
+| `stringVecs` | 宣言 40 / 実際 39 ペア（String → Array[string]） | Performer のセグメントタイプ、ページ名、タグ等 |
 
-Vec 部分合計は約 13,527 バイト（観測値）。各セクションの宣言数も実際のペア数より 1 少ない値が並ぶ傾向がある（例: `intVecs` 42 → 実際 41 ペア）。
+Vec 部分合計は約 13,527 バイト（観測値）。Vec Sections でも Map Sections と同様に「宣言数は実際のペア数より 1 大きい」という挙動が観測される（例: `intVecs` 宣言 42 → 実際 41 ペア）。
 
 ### 値数の内訳（268 個 = 全体）
 
@@ -160,7 +160,7 @@ pub struct PchkHeader {
     pub version: u32,
     /// 不明フィールド1（用途未特定、観測値は2）
     pub field1: u32,
-    /// 不明フィールド2（用途未特定、観測値は2）
+    /// 不明フィールド2（用途未特定、観測値は0〜3で可変）
     pub field2: u32,
     /// 圧縮データサイズ（zlib圧縮後のバイト数）
     pub compressed_size: u32,

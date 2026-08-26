@@ -8,14 +8,14 @@ NICA チャンクは、プラグインがホスト (DAW) に公開するパラ�
 
 ## チャンクレイアウト
 
-`Abandoned.nksf` での観測値（チャンク全体で約 588 バイト）:
+`Abandoned.nksf` での観測値（チャンク全体で 589 バイト）:
 
 | Offset（チャンク先頭基準） | Size | Content | Description |
 |--------|------|---------|-------------|
-| +0x00 | 4 | `"NICA"` | チャンク ID（ASCII） |
-| +0x04 | 4 | chunk_size | チャンクサイズ（リトルエンディアン u32）。観測例: 約580 |
+| +0x00 | 4 | `"NICA"` | チャンク ID（ASCII）。ファイル上ではオフセット `0x165` に位置 |
+| +0x04 | 4 | chunk_size | チャンクサイズ（リトルエンディアン u32）。観測例: 581 |
 | +0x08 | 4 | version | チャンクバージョン（リトルエンディアン u32）。観測値: 1 |
-| +0x0C | 約580 | MessagePack データ | パラメータデータ |
+| +0x0C | 577 | MessagePack データ | パラメータデータ |
 
 MessagePack 部分の先頭バイトは `0x81`（要素数 1 の fixmap）。
 
@@ -56,30 +56,30 @@ fixmap(1)
 
 ## デコード例
 
-`Abandoned.nksf` のファイルオフセット `0x170` 以降（NICA チャンク MessagePack 部の先頭）:
+`Abandoned.nksf` のファイルオフセット `0x171` 以降（NICA チャンク MessagePack 部の先頭。NISI チャンクが `0x0C` + 345 B であるため、NICA の version フィールドは `0x16D`、ペイロードは `0x171` から始まる）:
 
 ```hex
 Offset  Bytes                               Decoded
 ------  --------------------------------    ------------------------------
-0x170   81                                  fixmap (要素数 1)
-0x171   a3                                  fixstr (3文字)
-0x172   6e 69 38                            "ni8"
-0x175   92                                  fixarray (要素数 2)
-0x176   98                                  fixarray (要素数 8) — パラメータ配列 [0]
-0x177   84                                  fixmap (要素数 4) — Parameter 0
-0x178   a8                                  fixstr (8文字)
-0x179   61 75 74 6f 6e 61 6d 65             "autoname"
-0x181   c3                                  true
-0x182   a2                                  fixstr (2文字)
-0x183   69 64                               "id"
-0x185   00                                  0 (positive fixint)
-0x186   a4                                  fixstr (4文字)
-0x187   6e 61 6d 65                         "name"
-0x18b   a8                                  fixstr (8文字)
-0x18c   57 54 20 50 6f 73 20 31             "WT Pos 1"
-0x194   a5                                  fixstr (5文字)
-0x195   76 66 6c 61 67                      "vflag"
-0x19a   c2                                  false
+0x171   81                                  fixmap (要素数 1)
+0x172   a3                                  fixstr (3文字)
+0x173   6e 69 38                            "ni8"
+0x176   92                                  fixarray (要素数 2)
+0x177   98                                  fixarray (要素数 8) — パラメータ配列 [0]
+0x178   84                                  fixmap (要素数 4) — Parameter 0
+0x179   a8                                  fixstr (8文字)
+0x17a   61 75 74 6f 6e 61 6d 65             "autoname"
+0x182   c3                                  true
+0x183   a2                                  fixstr (2文字)
+0x184   69 64                               "id"
+0x186   00                                  0 (positive fixint)
+0x187   a4                                  fixstr (4文字)
+0x188   6e 61 6d 65                         "name"
+0x18c   a8                                  fixstr (8文字)
+0x18d   57 54 20 50 6f 73 20 31             "WT Pos 1"
+0x195   a5                                  fixstr (5文字)
+0x196   76 66 6c 61 67                      "vflag"
+0x19b   c2                                  false
 ```
 
 ## Rust 構造体

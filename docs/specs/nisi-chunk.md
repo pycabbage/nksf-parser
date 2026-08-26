@@ -8,16 +8,16 @@ NISI チャンクは Massive X プリセットのメタデータを格納する�
 
 ## チャンクレイアウト
 
-`Abandoned.nksf` での観測値（チャンク全体で約 349 バイト）:
+`Abandoned.nksf` での観測値（チャンク全体で 345 バイト）:
 
 | Offset（チャンク先頭基準） | Size | Content | Description |
 |--------|------|---------|-------------|
-| +0x00 | 4 | `"NISI"` | チャンク ID（ASCII） |
-| +0x04 | 4 | chunk_size | チャンクサイズ（リトルエンディアン u32）。観測例: 341 |
+| +0x00 | 4 | `"NISI"` | チャンク ID（ASCII）。ファイル上ではオフセット `0x0C` に位置 |
+| +0x04 | 4 | chunk_size | チャンクサイズ（リトルエンディアン u32）。観測例: 337 |
 | +0x08 | 4 | version | チャンクバージョン（リトルエンディアン u32）。観測値: 1 |
-| +0x0C | 約341 | MessagePack データ | メタデータマップ |
+| +0x0C | 333 | MessagePack データ | メタデータマップ |
 
-MessagePack 部分の先頭バイトは `0x8b`（要素数 11 の fixmap）で始まる。以降の説明では `Abandoned.nksf` のオフセット（ファイル先頭基準）を用いる。この場合チャンクデータ部（MessagePack 開始位置）はファイルオフセット `0x14` からである。
+MessagePack 部分の先頭バイトは `0x8b`（要素数 11 の fixmap）で始まる。以降の説明では `Abandoned.nksf` のオフセット（ファイル先頭基準）を用いる。チャンクは RIFF ヘッダ直後のファイルオフセット `0x0C` から始まるため、version フィールドが `0x14`、チャンクデータ部（MessagePack 開始位置）はファイルオフセット `0x18` からである。
 
 ## MessagePack 構造
 
@@ -48,17 +48,17 @@ MessagePack 部分の先頭バイトは `0x8b`（要素数 11 の fixmap）で�
 
 ## 先頭バイトのデコード例
 
-`Abandoned.nksf` のファイルオフセット `0x14` 以降（MessagePack データ部の先頭）:
+`Abandoned.nksf` のファイルオフセット `0x18` 以降（MessagePack データ部の先頭）:
 
 ```hex
 Offset  Bytes                               Decoded
 ------  --------------------------------    ------------------------------
-0x14    8b                                  fixmap (要素数 11)
-0x15    ad                                  fixstr (13文字)
-0x16    5f 5f 6e 69 5f 69 6e 74 65 72       "__ni_internal"
+0x18    8b                                  fixmap (要素数 11)
+0x19    ad                                  fixstr (13文字)
+0x1a    5f 5f 6e 69 5f 69 6e 74 65 72       "__ni_internal"
         6e 61 6c
-0x22    a4                                  fixstr (4文字)
-0x23    42 52 49 42                         "BRIB"
+0x26    a4                                  fixstr (4文字)
+0x27    42 52 49 42                         "BRIB"
         (BRIB の値: 内部データが続く)
 ...     a6 61 75 74 68 6f 72                fixstr(6) "author"
         b2 54 6f 72 73 74 65 6e 20 46 61    fixstr(18) "Torsten Fassbender"
