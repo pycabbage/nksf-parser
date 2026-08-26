@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本ファイルがプロジェクトの唯一のルートレベル開発ガイドです（旧DEVELOPMENT.md・INSTRUCT.mdの内容を統合済み）。
 
 ## プロジェクト概要
 
@@ -13,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ 全720個のMassive X Libraryプリセット対応確認済み
 - ✅ セキュリティ対策実装済み（DoS攻撃防御）
 - ✅ テストライブラリ導入完了（rstest, cargo-nextest, insta, pretty_assertions, proptest, criterion）
-- ✅ 全759テスト成功（ユニット32 + 統合7 + fixture 720）
+- ✅ 全テスト成功（ユニット32個、統合テスト（エラーケース・プロパティベース）、fixtureテスト720個）
 
 ### アーキテクチャ
 
@@ -23,7 +24,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - 責任分離の観点から、JSON形式の出力は行わない
   - JSON最適化も行わない（純粋なパーサー機能のみ）
   - 全4チャンク対応: NISI（メタデータ）、NICA（パラメータ）、PLID（プラグインID）、PCHK（プラグインデータ）
-  - セキュリティ対策: チャンクサイズ上限（100MB）、zlib展開サイズ上限（50MB）
 - **cli** (`nksf-parser-cli`): コマンドラインインターフェース
   - libを使用して.nksfファイルを解析
   - 解析結果をJSON/JSONL形式で出力
@@ -31,6 +31,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - 出力先の柔軟な指定（`-o`, `-d`オプション）
   - JSONL形式での結合出力対応（`--jsonl`フラグ）
   - ユーザーフレンドリーなエラーメッセージ
+
+## 開発環境のセットアップ
+
+- 必要なツール: Rust 1.70以上（推奨: 最新のstable版）、Cargo（同梱）
+- セットアップ後の動作確認:
+
+```bash
+cargo check   # 依存関係の確認
+cargo build   # ビルドの確認
+```
 
 ## 開発コマンド
 
@@ -113,13 +123,12 @@ cargo add --dev <package-name>
    - 各モジュールの関数・構造体の単体テスト
    - `#[cfg(test)]` モジュール内に配置
    - 実装ファイルと同じファイル内に記述
-   - 合計: 32個
 
 2. **統合テスト**: `lib/tests` 以下に配置
-   - **integration.rs**: エラーケーステスト、プロパティベーステスト
+   - **integration.rs**: エラーケーステスト、性能テスト（`#[ignore]`付き）、プロパティベーステスト
    - **fixture_test.rs**: 720プリセットの統合テスト（rstest + insta）
      - 720個の`#[case]`を1つの関数で実行
-   - **snapshots/**: instaスナップショットファイル（約380MB）
+   - **snapshots/**: instaスナップショットファイル（約380MB、Gitコミット済み）
      - `fixture_test__<Preset Name>.snap` × 720個: 各プリセットの期待値（YAML形式）
    - **massive_x_factory_library_tests/fixture/**: テストフィクスチャ
      - `*.nksf` × 720個: 全Massive X Libraryプリセット
@@ -151,10 +160,47 @@ cargo add --dev <package-name>
 
 ## コーディング規約
 
-- **Rustの標準スタイル**: rustfmt に従う
+### 基本原則
+
+- **YAGNI**: 将来使うかもしれない機能は実装しない
+- **DRY**: 重複コードは必ず関数化・モジュール化する
+- **KISS**: 複雑な解決策より単純な解決策を優先
+
+### Rustスタイル
+
+- **フォーマット**: rustfmt に従う
+- **命名規則**: Rustの標準命名規則に準拠（スネークケース: 関数・変数・モジュール、キャメルケース: 型・トレイト、スクリーミングスネークケース: 定数）
 - **関数・構造体・ファイルの適切な分割**: 責任を明確に分離
-- **ドキュメントコメント**: パブリックAPIには必ず記述
-- **作業前の確認**: 必ず `pwd` でカレントディレクトリを確認
+- **ドキュメントコメント**: パブリックAPIには `///` で必ず記述（例を含めることを推奨）
+
+### ファイル構成
+
+- **末尾改行**: すべてのファイルの末尾に改行を入れる（trailing newline）
+- **コメント**: コード内コメントは日本語で記述
+- **インポート順序**: std → 外部クレート → 内部モジュール
+
+## ワークフロー
+
+### 作業開始時
+
+1. 作業前に必ず公式ドキュメントを調査し、ライブラリの型定義を確認する
+2. `pwd` でカレントディレクトリを確認する
+
+### 作業終了時
+
+1. テスト・フォーマット・Lintを実行して検証する:
+   ```bash
+   cargo nextest run && cargo fmt && cargo clippy -- -D warnings
+   ```
+2. 修正の根拠を明確にする（エビデンスを残す）
+3. プロジェクトの状況に変化があった場合、本ファイル（CLAUDE.md）を更新する
+
+### プルリクエスト
+
+- 明確なタイトルと説明を記述する
+- 変更内容の概要を説明する
+- テスト結果を含める
+- 関連するIssueがあれば参照する
 
 ## 重要な制約
 
@@ -176,9 +222,28 @@ cargo add --dev <package-name>
 - `lib/src` 以下の各 `.rs` ファイルにユニットテストを記述する
 - `lib/tests` 以下に統合テストを記述する
 
-**現在の状況**:
-- ユニットテスト: 32個実装済み ✅
-- 統合テスト: 7個実装済み ✅
-- fixtureテスト: 720個実装済み（rstest + insta）✅
-- スナップショットファイル: 720個（約380MB、YAML形式）✅
-- 全720プリセットの解析確認済み ✅
+### セキュリティ要件
+
+- チャンクサイズ上限: 100MB
+- zlib展開サイズ上限: 50MB
+- MessagePack値数上限: 100,000個
+- DoS攻撃・Zip Bomb攻撃への防御を実装
+
+## 技術仕様（概要）
+
+- **ベースフォーマット**: RIFF / フォーマット識別子 "NIKS"
+- **エンコーディング**: MessagePack（PCHKチャンクのみzlib圧縮）
+- **チャンク構造**: `[4 bytes] チャンクID` + `[4 bytes] チャンクサイズ（リトルエンディアン）` + `[n bytes] チャンクデータ`
+- 詳細は [docs/specs/](./docs/specs/) を参照
+
+## ドキュメント
+
+- [docs/specs/](./docs/specs/): .nksf形式の仕様書
+- [docs/adr/](./docs/adr/): アーキテクチャ決定記録（ADR）
+
+## 参考資料
+
+- [NKSF File Format (Community)](https://community.native-instruments.com/discussion/13469/)
+- [Native Instruments Massive X](https://www.native-instruments.com/en/products/komplete/synths/massive-x/)
+- [RIFF Format Specification](https://en.wikipedia.org/wiki/Resource_Interchange_File_Format)
+- [MessagePack Specification](https://msgpack.org/)
