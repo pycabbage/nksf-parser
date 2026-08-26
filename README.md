@@ -105,7 +105,10 @@ println!("Parameters: {}", nksf.plugin_chunk.values.len());
 
 ## 開発
 
-開発者向けの詳細情報は[DEVELOPMENT.md](./DEVELOPMENT.md)を参照してください。
+開発者向けガイドは[CLAUDE.md](./CLAUDE.md)を参照してください。
+
+- .nksf形式の仕様書: [docs/specs/](./docs/specs/)
+- アーキテクチャ決定記録（ADR）: [docs/adr/](./docs/adr/)
 
 ## ライセンス
 
